@@ -8,7 +8,7 @@ router = APIRouter(
 )
 
 @router.post("/new")
-def create_post(post_id: int, author: str, title: str, content: str, create_at: str):
+def create_post(post_id: int, author: str, title: str, content: str, created_at: str):
     """
     게시글 생성
     """
@@ -26,10 +26,10 @@ def list_posts():
     author = 'author1'
     title = 'title1'
     content = 'content1'
-    create_at = '2024-01-01'
+    created_at = '2024-01-01'
     return {"code" : "200", 
             "message" : "성공", 
-            "data" : [{"post_id": post_id, "author": author, "title": title, "content": content, "create_at": create_at}]}
+            "data" : [{"post_id": post_id, "author": author, "title": title, "content": content, "created_at": created_at}]}
 
 @router.get("/{post_id}")
 def get_post(post_id: int):
@@ -40,11 +40,11 @@ def get_post(post_id: int):
     author = 'author1'
     title = 'title1'
     content = 'content1'
-    create_at = '2024-01-01'
+    created_at = '2024-01-01'
     return {"code" : "200", 
             "message" : "성공", 
             "data" : {"post_id": post_id, 
                       "author": author, 
                       "title": title, 
                       "content": content, 
-                      "create_at": create_at}}
+                      "created_at": created_at}}
