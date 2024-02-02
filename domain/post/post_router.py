@@ -3,11 +3,11 @@ from fastapi import APIRouter
 from domain.post import post_schema
 
 router = APIRouter(
-    prefix="/api/post",
+    prefix="/api",
     tags=["post"]
 )
 
-@router.post("/new")
+@router.post("/post")
 def create_post(post_id: int, author: str, title: str, content: str, created_at: str):
     """
     게시글 생성
@@ -16,8 +16,8 @@ def create_post(post_id: int, author: str, title: str, content: str, created_at:
     return {"code" : "200", 
             "message" : "성공"}
 
-@router.get("/list")
-def list_posts():
+@router.get("/posts")
+def get_posts():
     """
     게시글 목록 조회
     """
