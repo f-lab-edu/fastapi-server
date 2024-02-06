@@ -1,6 +1,6 @@
-import datetime
+from pydantic import BaseModel, Field
 
-from pydantic import BaseModel
+import datetime
 
 class Item(BaseModel):
     post_id: int
