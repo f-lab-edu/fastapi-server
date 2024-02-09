@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 import datetime
 
@@ -9,20 +9,32 @@ router = APIRouter(
     tags=["post"]
 )
 
+store_data = []
+
 @router.post("/post", response_class=JSONResponse)
-def create_post(request: Request, data: post_schema.Item):
+def create_post(data: post_schema.RequestBody):
     """
     게시글 생성
     """
-    global store_data 
-    store_data = data
+    global store_data
+    if len(store_data) == 0:
+        post_id = 1
+        content = {"post_id" : post_id, "author" : data.author, "title" : data.title , "content" : data.content, "created_at" : str(datetime.datetime.now())}
+        store_data.append(content)
+        print(store_data)
+    else:
+        post_id = len(store_data) + 1
+        content = {"post_id" : post_id, "author" : data.author, "title" : data.title , "content" : data.content, "created_at" : str(datetime.datetime.now())}
+        store_data.append(content)
+        print(store_data)
+
     return JSONResponse(
-        status_code=200,
-        content=data
+        status_code=status.HTTP_201_CREATED,
+        content=store_data
     )
 
 @router.get("/posts", response_class=JSONResponse)
-def get_posts(request: Request):
+def get_posts():
     """
     게시글 목록 조회
     """
@@ -32,7 +44,7 @@ def get_posts(request: Request):
     )
 
 @router.get("/posts/{post_id}", response_class=JSONResponse)
-def get_post(request: Request, post_id: int):
+def get_post(post_id: int):
     """
     게시글 조회
     """
@@ -42,8 +54,8 @@ def get_post(request: Request, post_id: int):
         content=data
     )
 
-@router.post("/update/{post_id}", response_class=JSONResponse)
-def edit_post(request: Request, data: post_schema.Item):
+@router.put("/{post_id}", response_class=JSONResponse)
+def edit_post(data: post_schema.Item):
     """
     게시글 수정
     """
@@ -54,8 +66,8 @@ def edit_post(request: Request, data: post_schema.Item):
         content=store_data
     )
 
-@router.post("/removal/{post_id}", response_class=JSONResponse)
-def delete_post(request: Request, post_id: int):
+@router.delete("/{post_id}", response_class=JSONResponse)
+def delete_post(post_id: int):
     """
     게시글 삭제
     """
