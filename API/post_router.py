@@ -2,7 +2,7 @@ from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 import datetime
 
-from domain.post import post_schema
+from domain import post_schema
 
 router = APIRouter(
     prefix="/api",
