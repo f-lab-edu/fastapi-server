@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 from starlette.exceptions import HTTPException
 
-from API import post_router
+from api import post_router
 
 app = FastAPI()
 
