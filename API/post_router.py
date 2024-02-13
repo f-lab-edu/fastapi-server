@@ -11,7 +11,7 @@ router = APIRouter(
 
 store_data = []
 
-@router.post("/post", response_class=JSONResponse)
+@router.post("/posts", response_class=JSONResponse)
 def create_post(data: RequestBody):
     """
     게시글 생성
