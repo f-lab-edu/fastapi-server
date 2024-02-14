@@ -2,16 +2,16 @@ from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 import datetime
 
-from domain.post_schema import Item, RequestBody
+from api.post_schema import Item, RequestBody
 
 router = APIRouter(
-    prefix="/api",
-    tags=["post"]
+    prefix="/api/posts",
+    tags=["posts"]
 )
 
 store_data = []
 
-@router.post("/posts", response_class=JSONResponse)
+@router.post("/", response_class=JSONResponse)
 def create_post(data: RequestBody):
     """
     게시글 생성
@@ -31,7 +31,7 @@ def create_post(data: RequestBody):
         content=store_data
     )
 
-@router.get("/posts", response_class=JSONResponse)
+@router.get("/", response_class=JSONResponse)
 def get_posts():
     """
     게시글 목록 조회
@@ -41,7 +41,7 @@ def get_posts():
         content=store_data
     )
 
-@router.get("/posts/{post_id}", response_class=JSONResponse)
+@router.get("/{post_id}", response_class=JSONResponse)
 def get_post(post_id: int):
     """
     게시글 조회

@@ -4,9 +4,7 @@ conn = sqlite3.connect("posts.db")
 
 cur = conn.cursor()
 
-cur.execute("""
-            SELECT * FROM posts
-            """)
+cur.execute("SELECT * FROM posts")
 
 rows = cur.fetchall()
 
