@@ -1,14 +1,22 @@
 # fastapi-server
 
-## 다이어그램
-![mermaid-diagram-2024-02-12-221026](https://github.com/f-lab-edu/fastapi-server/assets/80112242/e5e1464d-af7e-4740-a7b0-5dd8c2488105)
+## 아키텍처
+```mermaid
+flowchart LR
+    A[main.py] --api 실행--> posts_router.py
+    posts_schema.py --데이터 요청--> database.py
+
+    subgraph api
+      posts_router.py --결과 요청--> posts_schema.py
+    end
+    
+    subgraph db
+      database.py --데이터 조회--> id1[(SQLite3)]
+    end
+```
 
 ## 버전 목록
-- pyenv : 2.3.35
 - python : 3.12.0
-- poetry : 1.7.1
-- fastapi : 0.109.0
-- uvicorn = 0.27.0
 
 ## 환경 설정 방법
 ### 1. pyenv 설치 방법
