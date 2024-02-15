@@ -2,7 +2,7 @@ from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 import datetime
 
-from api.posts_schema import Item, RequestBody
+from api.posts_schema import ResponseModel, ResponseListModel, Content, RequestBody
 
 router = APIRouter(
     prefix="/api/posts",
@@ -11,8 +11,8 @@ router = APIRouter(
 
 store_data = []
 
-@router.post("/", response_class=JSONResponse)
-def create_post(data: RequestBody):
+@router.post("/", response_model=ResponseModel, status_code=status.HTTP_201_CREATED)
+def create_post(data: RequestBody) -> ResponseModel:
     """
     게시글 생성
     """
@@ -27,22 +27,20 @@ def create_post(data: RequestBody):
         store_data.append(content)
 
     return JSONResponse(
-        status_code=status.HTTP_201_CREATED,
-        content=store_data
+        {"message" : "성공", "data" : content}
     )
 
-@router.get("/", response_class=JSONResponse)
-def get_posts():
+@router.get("/", response_model=ResponseListModel, status_code=status.HTTP_200_OK)
+def get_posts() -> ResponseListModel:
     """
     게시글 목록 조회
     """
     return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content=store_data
+        {"message" : "성공", "data" : store_data}
     )
 
-@router.get("/{post_id}", response_class=JSONResponse)
-def get_post(post_id: int):
+@router.get("/{post_id}", response_model=ResponseModel, status_code=status.HTTP_200_OK)
+def get_post(post_id: int) -> ResponseModel:
     """
     게시글 조회
     """
@@ -51,8 +49,7 @@ def get_post(post_id: int):
         if post.get("post_id") == post_id:
             data = post
             return JSONResponse(
-                status_code=status.HTTP_201_CREATED,
-                content=data
+                {"message" : "성공", "data" : data}
             )
         else:
             data = {}
@@ -61,8 +58,8 @@ def get_post(post_id: int):
                 content=data
             )
 
-@router.put("/{post_id}", response_class=JSONResponse)
-def edit_post(data: Item):
+@router.put("/{post_id}", response_model=ResponseModel, status_code=status.HTTP_200_OK)
+def edit_post(data: Content) -> ResponseModel:
     """
     게시글 수정
     """
@@ -74,8 +71,7 @@ def edit_post(data: Item):
             post["content"] = data.content
             data = {}
             return JSONResponse(
-                status_code=status.HTTP_201_CREATED,
-                content=data
+               {"message" : "성공", "data" : data}
             )
         else:
             data = {}
@@ -84,8 +80,8 @@ def edit_post(data: Item):
                 content=data
             )
 
-@router.delete("/{post_id}", response_class=JSONResponse)
-def delete_post(post_id: int):
+@router.delete("/{post_id}", response_model=ResponseModel, status_code=status.HTTP_200_OK)
+def delete_post(post_id: int) -> ResponseModel:
     """
     게시글 삭제
     """

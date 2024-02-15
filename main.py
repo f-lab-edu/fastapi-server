@@ -1,8 +1,10 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
 from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException
 
-from api import post_router
+from api import posts_router
 
 app = FastAPI()
 
@@ -17,4 +19,12 @@ async def http_exception_handler(request: Request, exc):
         content={"code" : f"{exc.code}", "message" : f"{exc.name}"}
     )
 
-app.include_router(post_router.router)
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        # content={"code" : f"{exc.code}", "message" : f"{exc.name}"}
+        content=jsonable_encoder({"detail": exc.errors(), "body": exc.body})
+    )
+
+app.include_router(posts_router.router)
