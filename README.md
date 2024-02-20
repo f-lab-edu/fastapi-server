@@ -10,9 +10,7 @@ flowchart LR
       posts_router.py --결과 요청--> posts_schema.py
     end
     
-    subgraph db
-      database.py --데이터 조회--> id1[(SQLite3)]
-    end
+    database.py --데이터 조회--> id1[(posts.db)]
 ```
 
 ## 버전 목록

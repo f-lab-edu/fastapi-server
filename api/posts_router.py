@@ -1,106 +1,86 @@
-from fastapi import APIRouter, status
-from fastapi.responses import JSONResponse
-import datetime
+from fastapi import APIRouter, status, HTTPException
+from fastapi.encoders import jsonable_encoder
 
-from api.posts_schema import Item, RequestBody
+from api.posts_schema import ResponseModel, ResponseListModel, RequestBody, ResponseBoolModel
+from database import insert, select_one, select_all, update, delete
 
 router = APIRouter(
     prefix="/api/posts",
     tags=["posts"]
 )
 
-store_data = []
-
-@router.post("/", response_class=JSONResponse)
-def create_post(data: RequestBody):
+@router.post("/", response_model=ResponseBoolModel, status_code=status.HTTP_201_CREATED)
+def create_post(data: RequestBody) -> ResponseBoolModel:
     """
     게시글 생성
     """
-    global store_data
-    if len(store_data) == 0:
-        post_id = 1
-        content = {"post_id" : post_id, "author" : data.author, "title" : data.title , "content" : data.content, "created_at" : str(datetime.datetime.now())}
-        store_data.append(content)
-    else:
-        post_id = len(store_data) + 1
-        content = {"post_id" : post_id, "author" : data.author, "title" : data.title , "content" : data.content, "created_at" : str(datetime.datetime.now())}
-        store_data.append(content)
-
-    return JSONResponse(
-        status_code=status.HTTP_201_CREATED,
-        content=store_data
+    data = insert(data.author, data.title, data.content)
+    if data is False:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="게시글 생성 실패",
+        )
+    return jsonable_encoder(
+        {"message" : "게시글 생성 성공", "data" : data}
     )
 
-@router.get("/", response_class=JSONResponse)
-def get_posts():
+@router.get("/", response_model=ResponseListModel, status_code=status.HTTP_200_OK)
+def get_posts() -> ResponseListModel:
     """
     게시글 목록 조회
     """
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content=store_data
+    data = select_all()
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="게시글 목록 조회 실패",
+        )
+    return jsonable_encoder(
+        {"message" : "성공", "data" : data}
     )
 
-@router.get("/{post_id}", response_class=JSONResponse)
-def get_post(post_id: int):
+@router.get("/{post_id}", response_model=ResponseModel, status_code=status.HTTP_200_OK)
+def get_post(post_id: int) -> ResponseModel:
     """
     게시글 조회
     """
-    global store_data
-    for post in store_data:
-        if post.get("post_id") == post_id:
-            data = post
-            return JSONResponse(
-                status_code=status.HTTP_201_CREATED,
-                content=data
-            )
-        else:
-            data = {}
-            return JSONResponse(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content=data
+    data = select_one(post_id)
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="게시글 조회 실패",
+        )
+    return jsonable_encoder(
+                {"message" : "게시글 조회 성공", "data" : data}
             )
 
-@router.put("/{post_id}", response_class=JSONResponse)
-def edit_post(data: Item):
+@router.put("/{post_id}", response_model=ResponseModel, status_code=status.HTTP_200_OK)
+def edit_post(post_id: int, data: RequestBody) -> ResponseModel:
     """
     게시글 수정
     """
-    global store_data
-    for post in store_data:
-        if post.get("post_id") == data.post_id:
-            post["author"] = data.author
-            post["title"] = data.title
-            post["content"] = data.content
-            data = {}
-            return JSONResponse(
-                status_code=status.HTTP_201_CREATED,
-                content=data
-            )
-        else:
-            data = {}
-            return JSONResponse(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content=data
-            )
+    data = update(post_id, data.author, data.title, data.content)
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="게시글 수정 실패",
+        )
+    return jsonable_encoder(
+        {"message" : "성공", "data" : data}
+    )
 
-@router.delete("/{post_id}", response_class=JSONResponse)
-def delete_post(post_id: int):
+@router.delete("/{post_id}", response_model=ResponseBoolModel, status_code=status.HTTP_200_OK)
+def delete_post(post_id: int) -> ResponseBoolModel:
     """
     게시글 삭제
     """
-    global store_data
-    for post in store_data:
-        if post.get("post_id") == post_id:
-            store_data.pop(store_data.index(post))
-            message = f"게시글 번호 {post_id} 삭제 성공"
-            return JSONResponse(
-                status_code=status.HTTP_200_OK,
-                content={"messaage" : message}
-            )
-        else:
-            data = {}
-            return JSONResponse(
-                status_code=status.HTTP_404_NOT_FOUND,
-                content=data
-            )
+    data = delete(post_id)
+    if data is False:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="게시글 삭제 실패",
+        )
+    message = f"게시글 번호 {post_id} 삭제 성공"
+    return jsonable_encoder(
+        {"message" : message, "data" : data}
+    )
