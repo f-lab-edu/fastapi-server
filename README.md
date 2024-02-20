@@ -11,6 +11,11 @@ flowchart LR
 ## 버전 목록
 - python : 3.12.0
 
+## 사용 예시
+### post
+### update
+### delete
+
 ## 환경 설정 방법
 ### 1. pyenv 설치 방법
 ```brew install pyenv```
@@ -27,8 +32,8 @@ flowchart LR
 ### 5. poetry 가상환경 실행
 ```poetry shell```
 
-### 6. poetry에서 패키지 설치
-```poetry add fastapi```
+### 6. poetry로 필요한 패키지 일괄 설치
+```poetry install```
 
 ### 7. poetry 종료 방법
 ```exit```
