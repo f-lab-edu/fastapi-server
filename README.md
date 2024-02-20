@@ -4,13 +4,8 @@
 ```mermaid
 flowchart LR
     A[main.py] --api 실행--> posts_router.py
-    posts_schema.py --데이터 요청--> database.py
-
-    subgraph api
-      posts_router.py --결과 요청--> posts_schema.py
-    end
-    
-    database.py --데이터 조회--> id1[(posts.db)]
+    posts_router.py --데이터 요청--> database.py
+    database.py --데이터 조회--> id1[(post.db)]
 ```
 
 ## 버전 목록
