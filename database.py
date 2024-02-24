@@ -33,9 +33,6 @@ def select_all() -> list[Post]:
     data = []
     with Session(engine) as session:
         results = session.exec(select(Post)).all()
-        data = session.get(Post, id)
-        print(data)
-        print(type(data))
         for res in results:
             res_dict = {
                 "post_id": res.post_id,
