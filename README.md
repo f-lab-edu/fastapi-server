@@ -12,9 +12,48 @@ flowchart LR
 - python : 3.12.0
 
 ## 사용 예시
-### post
-### update
-### delete
+### 게시글 목록 조회 API
+```
+curl -X 'GET'
+    'http://127.0.0.1:8000/api/posts/'
+    -H 'accept: application/json'
+```
+### 게시글 생성 API
+```
+curl -X 'POST'
+    'http://127.0.0.1:8000/api/posts/'
+    -H 'accept: application/json'
+    -H 'Content-Type: application/json'
+    -d '{
+        "author": "string",
+        "title": "string",
+        "content": "string"
+        }'
+```
+### 게시글 조회 API
+```
+curl -X 'GET'
+    'http://127.0.0.1:8000/api/posts/1'
+    -H 'accept: application/json'
+```
+### 게시글 수정 API
+```
+curl -X 'PUT'
+    'http://127.0.0.1:8000/api/posts/1'
+    -H 'accept: application/json'
+    -H 'Content-Type: application/json'
+    -d '{
+        "author": "string",
+        "title": "string",
+        "content": "string"
+        }'
+```
+### 게시글 삭제 API
+```
+curl -X 'DELETE'
+    'http://127.0.0.1:8000/api/posts/1'
+    -H 'accept: application/json'
+```
 
 ## 환경 설정 방법
 ### 1. pyenv 설치 방법
