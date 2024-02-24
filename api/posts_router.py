@@ -1,28 +1,22 @@
-from fastapi import APIRouter, status, HTTPException
-from fastapi.encoders import jsonable_encoder
+from fastapi import APIRouter, HTTPException, status
 
-from api.posts_schema import ResponseModel, ResponseListModel, RequestBody, ResponseBoolModel
-from database import insert, select_one, select_all, update, delete
+from api.posts_schema import (Content, RequestBody, ResponseListModel,
+                              ResponseMessageModel, ResponseModel)
+from database import delete, insert, select_all, select_one, update
 
-router = APIRouter(
-    prefix="/api/posts",
-    tags=["posts"]
+router = APIRouter(prefix="/api/posts", tags=["posts"])
+
+
+@router.post(
+    "/", response_model=ResponseMessageModel, status_code=status.HTTP_201_CREATED
 )
-
-@router.post("/", response_model=ResponseBoolModel, status_code=status.HTTP_201_CREATED)
-def create_post(data: RequestBody) -> ResponseBoolModel:
+def create_post(data: RequestBody):
     """
     게시글 생성
     """
     data = insert(data.author, data.title, data.content)
-    if data is False:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="게시글 생성 실패",
-        )
-    return jsonable_encoder(
-        {"message" : "게시글 생성 성공", "data" : data}
-    )
+    return ResponseMessageModel(message="게시글 생성 성공")
+
 
 @router.get("/", response_model=ResponseListModel, status_code=status.HTTP_200_OK)
 def get_posts() -> ResponseListModel:
@@ -30,29 +24,26 @@ def get_posts() -> ResponseListModel:
     게시글 목록 조회
     """
     data = select_all()
-    if not data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="게시글 목록 조회 실패",
-        )
-    return jsonable_encoder(
-        {"message" : "성공", "data" : data}
-    )
+    return ResponseListModel(message="게시글 목록 조회 성공", data=data)
+
 
 @router.get("/{post_id}", response_model=ResponseModel, status_code=status.HTTP_200_OK)
-def get_post(post_id: int) -> ResponseModel:
+def get_post(post_id: int):
     """
     게시글 조회
     """
     data = select_one(post_id)
-    if not data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="게시글 조회 실패",
-        )
-    return jsonable_encoder(
-                {"message" : "게시글 조회 성공", "data" : data}
-            )
+    return ResponseModel(
+        message="게시글 조회 성공",
+        data=Content(
+            post_id=data.post_id,
+            author=data.author,
+            title=data.title,
+            content=data.content,
+            created_at=data.created_at,
+        ),
+    )
+
 
 @router.put("/{post_id}", response_model=ResponseModel, status_code=status.HTTP_200_OK)
 def edit_post(post_id: int, data: RequestBody) -> ResponseModel:
@@ -65,12 +56,22 @@ def edit_post(post_id: int, data: RequestBody) -> ResponseModel:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="게시글 수정 실패",
         )
-    return jsonable_encoder(
-        {"message" : "성공", "data" : data}
+    return ResponseModel(
+        message=f"게시글 번호 {post_id} 수정 성공",
+        data=Content(
+            post_id=data.post_id,
+            author=data.author,
+            title=data.title,
+            content=data.content,
+            created_at=data.created_at,
+        ),
     )
 
-@router.delete("/{post_id}", response_model=ResponseBoolModel, status_code=status.HTTP_200_OK)
-def delete_post(post_id: int) -> ResponseBoolModel:
+
+@router.delete(
+    "/{post_id}", response_model=ResponseMessageModel, status_code=status.HTTP_200_OK
+)
+def delete_post(post_id: int):
     """
     게시글 삭제
     """
@@ -80,7 +81,4 @@ def delete_post(post_id: int) -> ResponseBoolModel:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="게시글 삭제 실패",
         )
-    message = f"게시글 번호 {post_id} 삭제 성공"
-    return jsonable_encoder(
-        {"message" : message, "data" : data}
-    )
+    return ResponseMessageModel(message=f"게시글 번호 {post_id} 삭제 성공")
