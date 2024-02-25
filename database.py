@@ -11,6 +11,21 @@ class Post(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
 
+class User(SQLModel, table=True):
+    user_id: int = Field(default=None, primary_key=True)
+    password: str
+    nickname: str
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
+
+class Comment(SQLModel, table=True):
+    com_id: int = Field(default=None, primary_key=True)
+    author_id: str
+    post_id: str
+    content: str
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
+
 sqlite_file_name = "post.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 

@@ -1,14 +1,22 @@
 from fastapi import APIRouter, HTTPException, status
 
-from api.posts_schema import (Content, RequestBody, ResponseListModel,
-                              ResponseMessageModel, ResponseModel)
+from api.api_schema import (
+    Content,
+    RequestBody,
+    ResponseListModel,
+    ResponseMessageModel,
+    ResponseModel,
+)
 from database import delete, insert, select_all, select_one, update
 
-router = APIRouter(prefix="/api/posts", tags=["posts"])
+router = APIRouter(prefix="/api")
 
 
 @router.post(
-    "/", response_model=ResponseMessageModel, status_code=status.HTTP_201_CREATED
+    "/posts",
+    response_model=ResponseMessageModel,
+    status_code=status.HTTP_201_CREATED,
+    tags=["posts"],
 )
 def create_post(data: RequestBody):
     """
@@ -18,7 +26,12 @@ def create_post(data: RequestBody):
     return ResponseMessageModel(message="게시글 생성 성공")
 
 
-@router.get("/", response_model=ResponseListModel, status_code=status.HTTP_200_OK)
+@router.get(
+    "/posts",
+    response_model=ResponseListModel,
+    status_code=status.HTTP_200_OK,
+    tags=["posts"],
+)
 def get_posts() -> ResponseListModel:
     """
     게시글 목록 조회
@@ -27,7 +40,12 @@ def get_posts() -> ResponseListModel:
     return ResponseListModel(message="게시글 목록 조회 성공", data=data)
 
 
-@router.get("/{post_id}", response_model=ResponseModel, status_code=status.HTTP_200_OK)
+@router.get(
+    "/posts/{post_id}",
+    response_model=ResponseModel,
+    status_code=status.HTTP_200_OK,
+    tags=["posts"],
+)
 def get_post(post_id: int):
     """
     게시글 조회
@@ -45,7 +63,12 @@ def get_post(post_id: int):
     )
 
 
-@router.put("/{post_id}", response_model=ResponseModel, status_code=status.HTTP_200_OK)
+@router.put(
+    "/posts/{post_id}",
+    response_model=ResponseModel,
+    status_code=status.HTTP_200_OK,
+    tags=["posts"],
+)
 def edit_post(post_id: int, data: RequestBody) -> ResponseModel:
     """
     게시글 수정
@@ -69,7 +92,10 @@ def edit_post(post_id: int, data: RequestBody) -> ResponseModel:
 
 
 @router.delete(
-    "/{post_id}", response_model=ResponseMessageModel, status_code=status.HTTP_200_OK
+    "/posts/{post_id}",
+    response_model=ResponseMessageModel,
+    status_code=status.HTTP_200_OK,
+    tags=["posts"],
 )
 def delete_post(post_id: int):
     """
@@ -82,3 +108,31 @@ def delete_post(post_id: int):
             detail="게시글 삭제 실패",
         )
     return ResponseMessageModel(message=f"게시글 번호 {post_id} 삭제 성공")
+
+
+@router.post(
+    "/users",
+    response_model=ResponseMessageModel,
+    status_code=status.HTTP_201_CREATED,
+    tags=["users"],
+)
+def create_user(data: RequestBody):
+    """
+    유저 생성
+    """
+    data = insert(data.author, data.title, data.content)
+    return ResponseMessageModel(message="유저 생성 성공")
+
+
+@router.post(
+    "/comments",
+    response_model=ResponseMessageModel,
+    status_code=status.HTTP_201_CREATED,
+    tags=["comments"],
+)
+def create_comment(data: RequestBody):
+    """
+    댓글 생성
+    """
+    data = insert(data.author, data.title, data.content)
+    return ResponseMessageModel(message="댓글 생성 성공")
