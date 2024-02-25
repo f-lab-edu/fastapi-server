@@ -6,7 +6,7 @@ from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
 
 class Post(SQLModel, table=True):
     post_id: int = Field(default=None, primary_key=True)
-    author: str
+    author: str = Field(foreign_key="user.user_id")
     title: str
     content: str
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
@@ -21,8 +21,8 @@ class User(SQLModel, table=True):
 
 class Comment(SQLModel, table=True):
     com_id: int = Field(default=None, primary_key=True)
-    author_id: str = Field(default=None, foreign_key="user.user_id")
-    post_id: str = Field(default=None, foreign_key="post.post_id")
+    author_id: str = Field(foreign_key="user.user_id")
+    post_id: str = Field(foreign_key="post.post_id")
     content: str
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 

@@ -28,7 +28,7 @@ def create_post(data: RequestBody):
 
 
 @router.get(
-    "/posts/{page}",
+    "/posts/",
     response_model=ResponseListModel,
     status_code=status.HTTP_200_OK,
     tags=["posts"],
@@ -131,6 +131,31 @@ def delete_post(post_id: int):
     return ResponseMessageModel(message=f"게시글 번호 {post_id} 삭제 성공")
 
 
+@router.get(
+    "/posts/{post_id}/comments/",
+    response_model=ResponseListModel,
+    status_code=status.HTTP_200_OK,
+    tags=["posts"],
+)
+def get_post_comments(page: int) -> ResponseListModel:
+    """
+    게시글 별로 작성된 댓글 목록 조회
+    """
+    data = []
+    offset = (page - 1) * 100
+    results = session.exec(select(Post).offset(offset).limit(100)).all()
+    for res in results:
+        res_dict = {
+            "post_id": res.post_id,
+            "title": res.title,
+            "author": res.author,
+            "content": res.content,
+            "created_at": res.created_at,
+        }
+        data.append(res_dict)
+    return ResponseListModel(message="게시글 목록 조회 성공", data=data)
+
+
 @router.post(
     "/users",
     response_model=ResponseMessageModel,
@@ -155,45 +180,44 @@ def create_user(data: RequestUserBody):
 
 
 @router.get(
-    "/users/{page}",
+    "/users/{user_id}/posts/",
     response_model=ResponseListModel,
     status_code=status.HTTP_200_OK,
     tags=["users"],
 )
-def get_user_posts(page: int) -> ResponseListModel:
-    """
-    게시글 목록 조회
-    """
-    data = page
-    return ResponseListModel(message="게시글 목록 조회 성공", data=data)
-
-
-@router.get(
-    "/users/{user_id}/posts/{page}",
-    response_model=ResponseListModel,
-    status_code=status.HTTP_200_OK,
-    tags=["users"],
-)
-def get_user_posts(page: int) -> ResponseListModel:
+def get_user_posts(user_id: str, page: int) -> ResponseListModel:
     """
     유저별로 작성한 게시글 목록 조회
     """
     data = page
-    return ResponseListModel(message="게시글 목록 조회 성공", data=data)
+    data = []
+    offset = (page - 1) * 100
+    results = session.exec(select(Post).offset(offset).limit(100)).all()
+    data = session.get(Post, user_id)
+    for res in results:
+        res_dict = {
+            "post_id": res.post_id,
+            "title": res.title,
+            "author": res.author,
+            "content": res.content,
+            "created_at": res.created_at,
+        }
+        data.append(res_dict)
+    return ResponseListModel(message="유저별 작성 게시글 목록 조회 성공", data=data)
 
 
 @router.get(
-    "/users/{user_id}/posts/{page}",
+    "/users/{user_id}/comments/",
     response_model=ResponseListModel,
     status_code=status.HTTP_200_OK,
     tags=["users"],
 )
-def get_user_posts(page: int) -> ResponseListModel:
+def get_user_comments(user_id: str, page: int) -> ResponseListModel:
     """
-    유저별로 작성한 게시글 목록 조회
+    유저별로 작성한 댓글 목록 조회
     """
     data = page
-    return ResponseListModel(message="게시글 목록 조회 성공", data=data)
+    return ResponseListModel(message="유저별 작성 댓글 조회 성공", data=data)
 
 
 @router.post(
