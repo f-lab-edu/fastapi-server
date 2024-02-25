@@ -24,16 +24,16 @@ def create_post(data: RequestBody):
 
 
 @router.get(
-    "/posts",
+    "/posts/{page}",
     response_model=ResponseListModel,
     status_code=status.HTTP_200_OK,
     tags=["posts"],
 )
-def get_posts() -> ResponseListModel:
+def get_posts(page: int) -> ResponseListModel:
     """
     게시글 목록 조회
     """
-    data = select_all()
+    data = select_all(page)
     return ResponseListModel(message="게시글 목록 조회 성공", data=data)
 
 

@@ -55,10 +55,11 @@ def select_one(id: int):
         return session.get(Post, id)
 
 
-def select_all() -> list[Post]:
+def select_all(page: int) -> list[Post]:
     data = []
     with Session(engine) as session:
-        results = session.exec(select(Post)).all()
+        offset = (page - 1) * 100
+        results = session.exec(select(Post).offset(offset).limit(100)).all()
         for res in results:
             res_dict = {
                 "post_id": res.post_id,
