@@ -1,13 +1,10 @@
 from fastapi import APIRouter, HTTPException, status
 
-from api.api_schema import (
-    Content,
-    RequestBody,
-    ResponseListModel,
-    ResponseMessageModel,
-    ResponseModel,
-)
-from database import delete, insert, select_all, select_one, update
+from api.api_schema import (Content, RequestBody, RequestUserBody,
+                            ResponseListModel, ResponseMessageModel,
+                            ResponseModel)
+from database import (add_comment, add_user, delete, insert, select_all,
+                      select_one, update)
 
 router = APIRouter(prefix="/api")
 
@@ -116,23 +113,23 @@ def delete_post(post_id: int):
     status_code=status.HTTP_201_CREATED,
     tags=["users"],
 )
-def create_user(data: RequestBody):
+def create_user(data: RequestUserBody):
     """
     유저 생성
     """
-    data = insert(data.author, data.title, data.content)
+    data = add_user(data.user_id, data.password, data.nickname)
     return ResponseMessageModel(message="유저 생성 성공")
 
 
-@router.post(
-    "/comments",
-    response_model=ResponseMessageModel,
-    status_code=status.HTTP_201_CREATED,
-    tags=["comments"],
-)
-def create_comment(data: RequestBody):
-    """
-    댓글 생성
-    """
-    data = insert(data.author, data.title, data.content)
-    return ResponseMessageModel(message="댓글 생성 성공")
+# @router.post(
+#     "/comments",
+#     response_model=ResponseMessageModel,
+#     status_code=status.HTTP_201_CREATED,
+#     tags=["comments"],
+# )
+# def create_comment(data: RequestBody):
+#     """
+#     댓글 생성
+#     """
+#     data = insert(data.author, data.title, data.content)
+#     return ResponseMessageModel(message="댓글 생성 성공")

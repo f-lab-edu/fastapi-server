@@ -30,3 +30,9 @@ class ResponseListModel(BaseModel):
 
 class ResponseMessageModel(BaseModel):
     message: str = Field(example="성공")
+
+
+class RequestUserBody(BaseModel):
+    user_id: str
+    password: str
+    nickname: str

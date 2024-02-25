@@ -1,6 +1,9 @@
+import hashlib
 from datetime import datetime
+from typing import List
 
-from sqlmodel import Field, Session, SQLModel, create_engine, select
+from sqlmodel import (Field, Relationship, Session, SQLModel, create_engine,
+                      select)
 
 
 class Post(SQLModel, table=True):
@@ -12,7 +15,7 @@ class Post(SQLModel, table=True):
 
 
 class User(SQLModel, table=True):
-    user_id: int = Field(default=None, primary_key=True)
+    user_id: str = Field(primary_key=True)
     password: str
     nickname: str
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
@@ -20,10 +23,18 @@ class User(SQLModel, table=True):
 
 class Comment(SQLModel, table=True):
     com_id: int = Field(default=None, primary_key=True)
-    author_id: str
-    post_id: str
+    author_id: str = Field(default=None, foreign_key="user.user_id")
+    post_id: str = Field(default=None, foreign_key="post.post_id")
     content: str
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
+
+class Relationship(SQLModel):
+    posts: List["Post"] = Relationship(back_populates="post", link_model=Post)
+    users: List["User"] = Relationship(back_populates="user", link_model=User)
+    comments: List["Comment"] = Relationship(
+        back_populates="comment", link_model=Comment
+    )
 
 
 sqlite_file_name = "post.db"
@@ -76,4 +87,22 @@ def delete(id: int):
     with Session(engine) as session:
         res = session.get(Post, id)
         session.delete(res)
+        session.commit()
+
+
+def add_user(user_id: str, password: str, nickname: str):
+    uppercase_count = sum(1 for word in password if word.isupper())
+    if len(password) < 8 or uppercase_count == 0:
+        raise ValueError
+    with Session(engine) as session:
+        hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        data = User(user_id=user_id, password=hashed_password, nickname=nickname)
+        session.add(data)
+        session.commit()
+
+
+def add_comment(author_id: str, post_id: str, content: str):
+    with Session(engine) as session:
+        data = Comment(author_id=author_id, post_id=post_id, content=content)
+        session.add(data)
         session.commit()
