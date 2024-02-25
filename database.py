@@ -1,9 +1,7 @@
-import hashlib
 from datetime import datetime
 from typing import List
 
-from sqlmodel import (Field, Relationship, Session, SQLModel, create_engine,
-                      select)
+from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
 
 
 class Post(SQLModel, table=True):
@@ -41,69 +39,4 @@ sqlite_file_name = "post.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
 engine = create_engine(sqlite_url, echo=True)
-
-
-def insert(author: str, title: str, content: str):
-    with Session(engine) as session:
-        data = Post(author=author, title=title, content=content)
-        session.add(data)
-        session.commit()
-
-
-def select_one(id: int):
-    with Session(engine) as session:
-        return session.get(Post, id)
-
-
-def select_all(page: int) -> list[Post]:
-    data = []
-    with Session(engine) as session:
-        offset = (page - 1) * 100
-        results = session.exec(select(Post).offset(offset).limit(100)).all()
-        for res in results:
-            res_dict = {
-                "post_id": res.post_id,
-                "title": res.title,
-                "author": res.author,
-                "content": res.content,
-                "created_at": res.created_at,
-            }
-            data.append(res_dict)
-    return data
-
-
-def update(id: int, author: str, title: str, content: str):
-    with Session(engine) as session:
-        res = session.get(Post, id)
-        res.author = author
-        res.title = title
-        res.content = content
-        session.add(res)
-        session.commit()
-        session.refresh(res)
-    return session.get(Post, id)
-
-
-def delete(id: int):
-    with Session(engine) as session:
-        res = session.get(Post, id)
-        session.delete(res)
-        session.commit()
-
-
-def add_user(user_id: str, password: str, nickname: str):
-    uppercase_count = sum(1 for word in password if word.isupper())
-    if len(password) < 8 or uppercase_count == 0:
-        raise ValueError
-    with Session(engine) as session:
-        hashed_password = hashlib.sha256(password.encode()).hexdigest()
-        data = User(user_id=user_id, password=hashed_password, nickname=nickname)
-        session.add(data)
-        session.commit()
-
-
-def add_comment(author_id: str, post_id: str, content: str):
-    with Session(engine) as session:
-        data = Comment(author_id=author_id, post_id=post_id, content=content)
-        session.add(data)
-        session.commit()
+session = Session(engine)

@@ -36,3 +36,9 @@ class RequestUserBody(BaseModel):
     user_id: str
     password: str
     nickname: str
+
+
+class RequestCommentBody(BaseModel):
+    author_id: str
+    post_id: int
+    content: str
