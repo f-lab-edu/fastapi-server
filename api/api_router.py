@@ -4,9 +4,9 @@ from fastapi import APIRouter, HTTPException, status
 from sqlmodel import Session, select
 
 from api.api_schema import (CommentBody, CommentConent, Content, RequestBody,
-                            ResponseComment, ResponseListModel,
-                            ResponseMessageModel, ResponseModel, ResponseUser,
-                            UserBody, UserConent)
+                            ResponseComList, ResponseComment,
+                            ResponseListModel, ResponseMessageModel,
+                            ResponseModel, ResponseUser, UserBody, UserConent)
 from database import Comment, Post, User, engine
 
 session = Session(engine)
@@ -136,27 +136,27 @@ def delete_post(post_id: int):
 
 @router.get(
     "/posts/{post_id}/comments/",
-    response_model=ResponseListModel,
+    response_model=ResponseComList,
     status_code=status.HTTP_200_OK,
     tags=["posts"],
 )
-def get_post_comments(page: int) -> ResponseListModel:
+def get_post_comments(post_id: int, page: int):
     """
     게시글 별로 작성된 댓글 목록 조회
     """
     data = []
     offset = (page - 1) * 100
-    results = session.exec(select(Post).offset(offset).limit(100)).all()
+    results = session.exec(select(Comment).where(Comment.post_id == post_id).offset(offset).limit(100)).all()
     for res in results:
         res_dict = {
+            "com_id": res.com_id,
+            "author_id": res.author_id,
             "post_id": res.post_id,
-            "title": res.title,
-            "author": res.author,
             "content": res.content,
             "created_at": res.created_at,
         }
         data.append(res_dict)
-    return ResponseListModel(message="게시글 목록 조회 성공", data=data)
+    return ResponseComList(message="게시글 별로 작성된 댓글 목록 조회 성공", data=data)
 
 
 @router.post(
@@ -330,3 +330,24 @@ def edit_comment(com_id: int, data: CommentConent):
             content=data.content,
         ),
     )
+
+
+@router.delete(
+    "/comments/{com_id}",
+    response_model=ResponseMessageModel,
+    status_code=status.HTTP_200_OK,
+    tags=["comments"],
+)
+def delete_comment(com_id: int):
+    """
+    댓글 삭제
+    """
+    data = session.get(Comment, com_id)
+    session.delete(data)
+    session.commit()
+    if data is False:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="댓글 삭제 실패",
+        )
+    return ResponseMessageModel(message=f"댓글 아이디 {com_id} 삭제 성공")

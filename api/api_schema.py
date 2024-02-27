@@ -37,6 +37,14 @@ class UserBody(BaseModel):
     nickname: str
 
 
+class Comment(BaseModel):
+    com_id: int
+    author_id: str
+    post_id: int
+    content: str
+    created_at: datetime
+
+
 class CommentBody(BaseModel):
     com_id: int
     author_id: str
@@ -51,6 +59,11 @@ class CommentConent(BaseModel):
 class ResponseComment(BaseModel):
     message: str = Field(example="성공")
     data: CommentConent
+
+
+class ResponseComList(BaseModel):
+    message: str = Field(example="성공")
+    data: List[Comment]
 
 
 class UserConent(BaseModel):
