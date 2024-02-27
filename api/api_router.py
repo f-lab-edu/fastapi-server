@@ -251,20 +251,18 @@ def delete_user(user_id: str):
     status_code=status.HTTP_200_OK,
     tags=["users"],
 )
-def get_user_posts(user_id: str, page: int) -> ResponseListModel:
+def get_user_posts(user_id: str, page: int):
     """
     유저별로 작성한 게시글 목록 조회
     """
-    data = page
     data = []
     offset = (page - 1) * 100
-    results = session.exec(select(Post).offset(offset).limit(100)).all()
-    data = session.get(Post, user_id)
+    results = session.exec(select(Post).where(Post.author == user_id).offset(offset).limit(100)).all()
     for res in results:
         res_dict = {
             "post_id": res.post_id,
-            "title": res.title,
             "author": res.author,
+            "title": res.title,
             "content": res.content,
             "created_at": res.created_at,
         }
