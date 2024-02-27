@@ -3,10 +3,10 @@ import hashlib
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import Session, select
 
-from api.api_schema import (Content, RequestBody, RequestCommentBody,
-                            RequestUserBody, ResponseListModel,
+from api.api_schema import (CommentBody, CommentConent, Content, RequestBody,
+                            ResponseComment, ResponseListModel,
                             ResponseMessageModel, ResponseModel, ResponseUser,
-                            UserConent)
+                            UserBody, UserConent)
 from database import Comment, Post, User, engine
 
 session = Session(engine)
@@ -165,7 +165,7 @@ def get_post_comments(page: int) -> ResponseListModel:
     status_code=status.HTTP_201_CREATED,
     tags=["users"],
 )
-def create_user(data: RequestUserBody):
+def create_user(data: UserBody):
     """
     유저 생성
     """
@@ -188,7 +188,7 @@ def create_user(data: RequestUserBody):
     status_code=status.HTTP_200_OK,
     tags=["users"],
 )
-def edit_user(user_id: str, data: RequestUserBody):
+def edit_user(user_id: str, data: UserBody):
     """
     유저 정보 수정
     """
@@ -292,7 +292,7 @@ def get_user_comments(user_id: str, page: int) -> ResponseListModel:
     status_code=status.HTTP_201_CREATED,
     tags=["comments"],
 )
-def create_comment(data: RequestCommentBody):
+def create_comment(data: CommentBody):
     """
     댓글 생성
     """
@@ -300,3 +300,33 @@ def create_comment(data: RequestCommentBody):
     session.add(data)
     session.commit()
     return ResponseMessageModel(message="댓글 생성 성공")
+
+
+@router.put(
+    "/comments/{com_id}",
+    response_model=ResponseComment,
+    status_code=status.HTTP_200_OK,
+    tags=["comments"],
+)
+def edit_comment(com_id: int, data: CommentConent):
+    """
+    댓글 내용 수정
+    """
+    res = session.get(Comment, com_id)
+    res.content = data.content
+    session.add(res)
+    session.commit()
+    session.refresh(res)
+    data = session.get(Comment, com_id)
+
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="댓글 내용 수정 실패",
+        )
+    return ResponseComment(
+        message=f"댓글 아이디 {com_id} 내용 수정 성공",
+        data=CommentConent(
+            content=data.content,
+        ),
+    )

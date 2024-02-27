@@ -32,15 +32,25 @@ class ResponseMessageModel(BaseModel):
     message: str = Field(example="성공")
 
 
-class RequestUserBody(BaseModel):
+class UserBody(BaseModel):
     password: str
     nickname: str
 
 
-class RequestCommentBody(BaseModel):
+class CommentBody(BaseModel):
+    com_id: int
     author_id: str
     post_id: int
     content: str
+
+
+class CommentConent(BaseModel):
+    content: str
+
+
+class ResponseComment(BaseModel):
+    message: str = Field(example="성공")
+    data: CommentConent
 
 
 class UserConent(BaseModel):
