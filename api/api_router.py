@@ -1,12 +1,15 @@
 import hashlib
 
 from fastapi import APIRouter, HTTPException, status
-from sqlmodel import select
+from sqlmodel import Session, select
 
 from api.api_schema import (Content, RequestBody, RequestCommentBody,
                             RequestUserBody, ResponseListModel,
-                            ResponseMessageModel, ResponseModel)
-from database import Comment, Post, User, session
+                            ResponseMessageModel, ResponseModel, ResponseUser,
+                            UserConent)
+from database import Comment, Post, User, engine
+
+session = Session(engine)
 
 router = APIRouter(prefix="/api")
 
@@ -177,6 +180,48 @@ def create_user(data: RequestUserBody):
     session.add(data)
     session.commit()
     return ResponseMessageModel(message="유저 생성 성공")
+
+
+@router.put(
+    "/users/{user_id}",
+    response_model=ResponseUser,
+    status_code=status.HTTP_200_OK,
+    tags=["users"],
+)
+def edit_user(user_id: str, data: RequestUserBody):
+    """
+    유저 정보 수정
+    """
+
+    uppercase_count = sum(1 for word in data.password if word.isupper())
+    if len(data.password) < 8 or uppercase_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="유저 비밀번호가 최소 8자 이상, 대문자 1개 이상 포함되는지 확인해주세요.",
+        )
+    hashed_password = hashlib.sha256(data.password.encode()).hexdigest()
+
+    res = session.get(User, user_id)
+    res.password = hashed_password
+    res.nickname = data.nickname
+    session.add(res)
+    session.commit()
+    session.refresh(res)
+    data = session.get(User, user_id)
+
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="유저 정보 수정 실패",
+        )
+    return ResponseUser(
+        message=f"유저 아이디 {user_id} 수정 성공",
+        data=UserConent(
+            user_id=user_id,
+            password=data.password,
+            nickname=data.nickname,
+        ),
+    )
 
 
 @router.get(

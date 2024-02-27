@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List
 
-from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
+from sqlmodel import Field, Relationship, SQLModel, create_engine
 
 
 class Post(SQLModel, table=True):
@@ -13,7 +13,7 @@ class Post(SQLModel, table=True):
 
 
 class User(SQLModel, table=True):
-    user_id: str = Field(primary_key=True)
+    user_id: str = Field(default=None, primary_key=True)
     password: str
     nickname: str
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
@@ -21,8 +21,8 @@ class User(SQLModel, table=True):
 
 class Comment(SQLModel, table=True):
     com_id: int = Field(default=None, primary_key=True)
-    author_id: str = Field(foreign_key="user.user_id")
-    post_id: str = Field(foreign_key="post.post_id")
+    author_id: str = Field(default=None, foreign_key="user.user_id")
+    post_id: str = Field(default=None, foreign_key="post.post_id")
     content: str
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
@@ -39,4 +39,3 @@ sqlite_file_name = "post.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
 engine = create_engine(sqlite_url, echo=True)
-session = Session(engine)

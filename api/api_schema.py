@@ -33,7 +33,6 @@ class ResponseMessageModel(BaseModel):
 
 
 class RequestUserBody(BaseModel):
-    user_id: str
     password: str
     nickname: str
 
@@ -42,3 +41,14 @@ class RequestCommentBody(BaseModel):
     author_id: str
     post_id: int
     content: str
+
+
+class UserConent(BaseModel):
+    user_id: str
+    password: str
+    nickname: str
+
+
+class ResponseUser(BaseModel):
+    message: str = Field(example="성공")
+    data: UserConent
