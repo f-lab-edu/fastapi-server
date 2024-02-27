@@ -3,8 +3,8 @@
 ## 아키텍처
 ```mermaid
 flowchart LR
-    A[main.py] --api 실행--> posts_router.py
-    posts_router.py --데이터 요청--> database.py
+    A[main.py] --api 실행--> api_router.py
+    api_router.py --데이터 요청--> database.py
     database.py --데이터 조회--> id1[(post.db)]
 ```
 
