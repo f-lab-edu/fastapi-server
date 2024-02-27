@@ -224,6 +224,27 @@ def edit_user(user_id: str, data: RequestUserBody):
     )
 
 
+@router.delete(
+    "/users/{user_id}",
+    response_model=ResponseMessageModel,
+    status_code=status.HTTP_200_OK,
+    tags=["users"],
+)
+def delete_user(user_id: str):
+    """
+    유저 삭제
+    """
+    data = session.get(User, user_id)
+    session.delete(data)
+    session.commit()
+    if data is False:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="유저 삭제 실패",
+        )
+    return ResponseMessageModel(message=f"유저 아이디 {user_id} 삭제 성공")
+
+
 @router.get(
     "/users/{user_id}/posts/",
     response_model=ResponseListModel,
