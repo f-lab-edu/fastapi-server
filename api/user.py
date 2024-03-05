@@ -1,6 +1,8 @@
-import hashlib
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, status
+from jose import jwt
+from passlib.context import CryptContext
 from sqlmodel import Session, select
 
 from api.api_schema import (
@@ -17,13 +19,31 @@ session = Session(engine)
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
+password_hashing = CryptContext(schemes=["bcrypt"], deprecated="auto")
+SECRET_KEY = "key01234567890"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_DAYS = 1
+logout_token = set()
+
+
+def create_access_token(data: dict, expires_delta: timedelta):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + expires_delta
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+def verify_password(plain_password, hashed_password):
+    return password_hashing.verify(plain_password, hashed_password)
+
 
 @router.post(
     "/",
     response_model=ResponseMessageModel,
     status_code=status.HTTP_201_CREATED,
 )
-def create_user(data: UserBody):
+def create_user(data: UserConent):
     """
     유저 생성
     """
@@ -33,7 +53,7 @@ def create_user(data: UserBody):
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="유저 비밀번호가 최소 8자 이상, 대문자 1개 이상 포함되는지 확인해주세요.",
         )
-    hashed_password = hashlib.sha256(data.password.encode()).hexdigest()
+    hashed_password = password_hashing.hash(data.password)
     data = User(user_id=data.user_id, password=hashed_password, nickname=data.nickname)
     session.add(data)
     session.commit()
@@ -56,7 +76,7 @@ def edit_user(user_id: str, data: UserBody):
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="유저 비밀번호가 최소 8자 이상, 대문자 1개 이상 포함되는지 확인해주세요.",
         )
-    hashed_password = hashlib.sha256(data.password.encode()).hexdigest()
+    hashed_password = password_hashing.hash(data.password)
 
     res = session.get(User, user_id)
     res.password = hashed_password
@@ -138,3 +158,37 @@ def get_user_comments(user_id: str, page: int) -> ResponseListModel:
     """
     data = page
     return ResponseListModel(message="유저별 작성 댓글 조회 성공", data=data)
+
+
+@router.post(
+    "/login",
+    status_code=status.HTTP_200_OK,
+)
+def post_user_login(user_id: str, password: str):
+    """
+    유저 로그인
+    """
+    db_data = session.get(User, user_id)
+    if not db_data or not verify_password(password, db_data.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="아이디 혹은 비밀번호가 맞지 않습니다.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
+    access_token = create_access_token(
+        data={"sub": user_id}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.post(
+    "/logout",
+    status_code=status.HTTP_200_OK,
+)
+def post_user_logout(token: str):
+    """
+    유저 로그아웃
+    """
+    logout_token.add(token)
+    return {"message": "로그아웃 성공"}
