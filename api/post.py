@@ -1,9 +1,15 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import Session, select
 
-from api.api_schema import (Content, RequestBody, ResponseComList,
-                            ResponseListModel, ResponseMessageModel,
-                            ResponseModel)
+from api.api_schema import (
+    CommentContent,
+    Content,
+    RequestBody,
+    ResponseComList,
+    ResponseListModel,
+    ResponseMessageModel,
+    ResponseModel,
+)
 from database import Comment, Post, engine
 
 session = Session(engine)
@@ -39,13 +45,13 @@ def get_posts(page: int) -> ResponseListModel:
     offset = (page - 1) * 100
     results = session.exec(select(Post).offset(offset).limit(100)).all()
     for res in results:
-        res_dict = {
-            "post_id": res.post_id,
-            "title": res.title,
-            "author": res.author,
-            "content": res.content,
-            "created_at": res.created_at,
-        }
+        res_dict = Content(
+            post_id=res.post_id,
+            author=res.author,
+            title=res.title,
+            content=res.content,
+            created_at=res.created_at,
+        )
         data.append(res_dict)
     return ResponseListModel(message="게시글 목록 조회 성공", data=data)
 
@@ -137,14 +143,16 @@ def get_post_comments(post_id: int, page: int):
     """
     data = []
     offset = (page - 1) * 100
-    results = session.exec(select(Comment).where(Comment.post_id == post_id).offset(offset).limit(100)).all()
+    results = session.exec(
+        select(Comment).where(Comment.post_id == post_id).offset(offset).limit(100)
+    ).all()
     for res in results:
-        res_dict = {
-            "com_id": res.com_id,
-            "author_id": res.author_id,
-            "post_id": res.post_id,
-            "content": res.content,
-            "created_at": res.created_at,
-        }
+        res_dict = CommentContent(
+            com_id=res.com_id,
+            author_id=res.author_id,
+            post_id=res.post_id,
+            content=res.content,
+            created_at=res.created_at,
+        )
         data.append(res_dict)
     return ResponseComList(message="게시글 별로 작성된 댓글 목록 조회 성공", data=data)
