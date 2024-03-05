@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from jose import jwt
 from passlib.context import CryptContext
 from sqlmodel import Session, select
@@ -23,7 +23,7 @@ password_hashing = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = "key01234567890"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 1
-logout_token = set()
+session_login = []
 
 
 def create_access_token(data: dict, expires_delta: timedelta):
@@ -179,6 +179,7 @@ def post_user_login(user_id: str, password: str):
     access_token = create_access_token(
         data={"sub": user_id}, expires_delta=access_token_expires
     )
+    session_login.append(access_token)
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -190,5 +191,8 @@ def post_user_logout(token: str):
     """
     유저 로그아웃
     """
-    logout_token.add(token)
+    if token not in session_login:
+        return {"message": "로그아웃 실패"}
+    token_idx = session_login.index(token)
+    session_login.pop(token_idx)
     return {"message": "로그아웃 성공"}
