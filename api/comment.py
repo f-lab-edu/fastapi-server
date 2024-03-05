@@ -1,9 +1,13 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import Session, select
 
-from api.api_schema import (CommentBody, CommentConent, ResponseComment,
-                            ResponseMessageModel)
-from database import Comment, Post, User, engine
+from api.api_schema import (
+    CommentBody,
+    CommentConent,
+    ResponseComment,
+    ResponseMessageModel,
+)
+from database import Comment, engine
 
 session = Session(engine)
 
