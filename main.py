@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 
-from api import api_router
+from api import comment, post, user
 from database import SQLModel, engine
 
 SQLModel.metadata.create_all(engine)
@@ -13,4 +13,6 @@ def index():
     return "/docs"
 
 
-app.include_router(api_router.router)
+app.include_router(post.router)
+app.include_router(user.router)
+app.include_router(comment.router)
