@@ -4,19 +4,22 @@ repos:
   hooks:
     - id: trailing-whitespace
     - id: end-of-file-fixer
-    - id: check-yaml
 
-# - repo: https://github.com/psf/black
-#   rev: 24.2.0
-#   hooks:
-#     - id: black
-
-- repo: https://github.com/hadialqattan/pycln
-  rev: v2.4.0
+- repo: local
   hooks:
+    - id: black
+      name: black
+      entry: poetry run black
+      language: system
+      types: [file, python]
     - id: pycln
-
-- repo: https://github.com/pycqa/isort
-  rev: 5.13.2
-  hooks:
+      name: pycln
+      entry: poetry run pycln
+      language: system
+      types: [file, python]
     - id: isort
+      args: ["--profile", "black", "--filter-files"]
+      name: isort
+      entry: poetry run isort
+      language: system
+      types: [file, python]
