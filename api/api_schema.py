@@ -31,11 +31,18 @@ class ResponseListModel(BaseModel):
 class ResponseMessageModel(BaseModel):
     message: str = Field(example="성공")
 
-
 class UserBody(BaseModel):
     password: str
     nickname: str
 
+class UserConent(BaseModel):
+    user_id: str
+    password: str
+    nickname: str
+
+class ResponseUser(BaseModel):
+    message: str = Field(example="성공")
+    data: UserConent
 
 class Comment(BaseModel):
     com_id: int
@@ -44,13 +51,11 @@ class Comment(BaseModel):
     content: str
     created_at: datetime
 
-
 class CommentBody(BaseModel):
     com_id: int
     author_id: str
     post_id: int
     content: str
-
 
 class CommentConent(BaseModel):
     content: str
@@ -64,14 +69,3 @@ class ResponseComment(BaseModel):
 class ResponseComList(BaseModel):
     message: str = Field(example="성공")
     data: List[Comment]
-
-
-class UserConent(BaseModel):
-    user_id: str
-    password: str
-    nickname: str
-
-
-class ResponseUser(BaseModel):
-    message: str = Field(example="성공")
-    data: UserConent
