@@ -22,7 +22,7 @@ router = APIRouter(prefix="/api/posts", tags=["posts"])
     response_model=ResponseMessageModel,
     status_code=status.HTTP_201_CREATED,
 )
-def create_post(data: RequestBody):
+def create_post(data: RequestBody) -> ResponseMessageModel:
     """
     게시글 생성
     """
@@ -61,7 +61,7 @@ def get_posts(page: int) -> ResponseListModel:
     response_model=ResponseModel,
     status_code=status.HTTP_200_OK,
 )
-def get_post(post_id: int):
+def get_post(post_id: int) -> ResponseModel:
     """
     게시글 조회
     """
@@ -122,7 +122,7 @@ def edit_post(post_id: int, data: RequestBody) -> ResponseModel:
     response_model=ResponseMessageModel,
     status_code=status.HTTP_200_OK,
 )
-def delete_post(post_id: int):
+def delete_post(post_id: int) -> ResponseMessageModel:
     """
     게시글 삭제
     """
@@ -142,7 +142,7 @@ def delete_post(post_id: int):
     response_model=ResponseComList,
     status_code=status.HTTP_200_OK,
 )
-def get_post_comments(post_id: int, page: int):
+def get_post_comments(post_id: int, page: int) -> ResponseComList:
     """
     게시글 별로 작성된 댓글 목록 조회
     """
