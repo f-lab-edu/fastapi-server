@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Header, HTTPException, status
 from sqlmodel import Session
 
 from api.api_schema import (
@@ -34,7 +34,9 @@ def create_comment(data: CommentBody) -> ResponseMessageModel:
     response_model=ResponseComment,
     status_code=status.HTTP_200_OK,
 )
-def edit_comment(com_id: int, data: CommentConent) -> ResponseComment:
+def edit_comment(
+    com_id: int, data: CommentConent, Authorization: str = Header()
+) -> ResponseComment:
     """
     댓글 내용 수정
     """
@@ -62,7 +64,7 @@ def edit_comment(com_id: int, data: CommentConent) -> ResponseComment:
     response_model=ResponseMessageModel,
     status_code=status.HTTP_200_OK,
 )
-def delete_comment(com_id: int) -> ResponseMessageModel:
+def delete_comment(com_id: int, Authorization: str = Header()) -> ResponseMessageModel:
     """
     댓글 삭제
     """

@@ -41,6 +41,7 @@ class UserConent(BaseModel):
     user_id: str
     password: str
     nickname: str
+    role: str
 
 
 class ResponseUser(BaseModel):

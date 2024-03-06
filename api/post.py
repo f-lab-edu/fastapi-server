@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Header, HTTPException, status
 from sqlmodel import Session, select
 
 from api.api_schema import (
@@ -88,7 +88,9 @@ def get_post(post_id: int) -> ResponseModel:
     response_model=ResponseModel,
     status_code=status.HTTP_200_OK,
 )
-def edit_post(post_id: int, data: RequestBody) -> ResponseModel:
+def edit_post(
+    post_id: int, data: RequestBody, Authorization: str = Header()
+) -> ResponseModel:
     """
     게시글 수정
     """
@@ -122,7 +124,7 @@ def edit_post(post_id: int, data: RequestBody) -> ResponseModel:
     response_model=ResponseMessageModel,
     status_code=status.HTTP_200_OK,
 )
-def delete_post(post_id: int) -> ResponseMessageModel:
+def delete_post(post_id: int, Authorization: str = Header()) -> ResponseMessageModel:
     """
     게시글 삭제
     """

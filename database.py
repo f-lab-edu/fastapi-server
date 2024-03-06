@@ -16,6 +16,7 @@ class User(SQLModel, table=True):
     user_id: str = Field(default=None, primary_key=True)
     password: str
     nickname: str
+    role: str = Field(default="member")
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
 
