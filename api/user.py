@@ -1,60 +1,35 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
-import yaml
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import APIKeyHeader
-from jose import jwt
-from passlib.context import CryptContext
 from sqlmodel import Session, select
 
 from api.api_schema import (
+    CommentContent,
     Content,
     Login,
     ResponseAccessToken,
+    ResponseComList,
     ResponseListModel,
     ResponseMessageModel,
     ResponseUser,
-    Settings,
     UserBody,
     UserConent,
 )
-from database import Post, User, engine
+from common import (
+    api_key_header,
+    check_access_token,
+    create_access_token,
+    password_hashing,
+    settings,
+    verify_password,
+)
+from database import Comment, Post, User, engine
 
 session = Session(engine)
 
 router = APIRouter(prefix="/api/users", tags=["users"])
-api_key_header = APIKeyHeader(name="Authorization")
-
-password_hashing = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-with open("config.yaml", "r") as file:
-    yaml_data = yaml.safe_load(file)
-settings = Settings(
-    secret_key=yaml_data.get("secret_key"),
-    algorithm=yaml_data.get("algorithm"),
-    access_token_expire_days=yaml_data.get("access_token_expire_days"),
-)
 
 session_login = []
-
-
-def create_access_token(data: dict, expires_delta: timedelta):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + expires_delta
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(
-        to_encode, settings.secret_key, algorithm=settings.algorithm
-    )
-    return encoded_jwt
-
-
-def verify_password(plain_password, hashed_password):
-    return password_hashing.verify(plain_password, hashed_password)
-
-
-def check_access_token(token):
-    decoded_jwt = jwt.decode(token, settings.secret_key, algorithms=settings.algorithm)
-    return decoded_jwt
 
 
 @router.post(
@@ -97,17 +72,19 @@ def edit_user(
     """
     유저 정보 수정
     """
-    token_user_id = check_access_token(token)
-    if token_user_id.get("user_id") != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="유저 아이디가 존재하지 않습니다.",
-        )
     res = session.get(User, user_id)
     if res == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="유저 아이디가 존재하지 않습니다.",
+        )
+
+    token_user_id = check_access_token(token)
+    user_role = session.get(User, token_user_id.get("user_id"))
+    if user_role != "admin" and token_user_id.get("user_id") != data.author:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="유저 아이디가 다릅니다.",
         )
 
     uppercase_count = sum(1 for word in data.password if word.isupper())
@@ -151,6 +128,13 @@ def delete_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="유저 삭제 실패. 유저 아이디가 존재하지 않습니다.",
         )
+    token_user_id = check_access_token(token)
+    user_role = session.get(User, token_user_id.get("user_id"))
+    if user_role != "admin" and token_user_id.get("user_id") != data.author:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="유저 아이디가 다릅니다.",
+        )
     session.delete(data)
     session.commit()
     return ResponseMessageModel(message=f"유저 아이디 {user_id} 삭제 성공")
@@ -167,6 +151,13 @@ def get_user_posts(
     """
     유저별로 작성한 게시글 목록 조회
     """
+    token_user_id = check_access_token(token)
+    user_role = session.get(User, token_user_id.get("user_id"))
+    if user_role != "admin" and token_user_id.get("user_id") != data.author:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="유저 아이디가 다릅니다.",
+        )
     data = []
     offset = (page - 1) * 100
     results = session.exec(
@@ -186,17 +177,37 @@ def get_user_posts(
 
 @router.get(
     "/{user_id}/comments/",
-    response_model=ResponseListModel,
+    response_model=ResponseComList,
     status_code=status.HTTP_200_OK,
 )
 def get_user_comments(
     user_id: str, page: int, token: str = Depends(api_key_header)
-) -> ResponseListModel:
+) -> ResponseComList:
     """
     유저별로 작성한 댓글 목록 조회
     """
-    data = page
-    return ResponseListModel(message="유저별 작성 댓글 조회 성공", data=data)
+    token_user_id = check_access_token(token)
+    user_role = session.get(User, token_user_id.get("user_id"))
+    if user_role != "admin" and token_user_id.get("user_id") != data.author:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="유저 아이디가 다릅니다.",
+        )
+    data = []
+    offset = (page - 1) * 100
+    results = session.exec(
+        select(Comment).where(Comment.author_id == user_id).offset(offset).limit(100)
+    ).all()
+    for res in results:
+        res_dict = CommentContent(
+            com_id=res.com_id,
+            author_id=res.author_id,
+            post_id=res.post_id,
+            content=res.content,
+            created_at=res.created_at,
+        )
+        data.append(res_dict)
+    return ResponseComList(message="유저별 작성 댓글 조회 성공", data=data)
 
 
 @router.post(

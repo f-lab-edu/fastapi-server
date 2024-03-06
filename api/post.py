@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Header, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 
 from api.api_schema import (
@@ -10,7 +10,8 @@ from api.api_schema import (
     ResponseMessageModel,
     ResponseModel,
 )
-from database import Comment, Post, engine
+from common import api_key_header, check_access_token
+from database import Comment, Post, User, engine
 
 session = Session(engine)
 
@@ -89,7 +90,7 @@ def get_post(post_id: int) -> ResponseModel:
     status_code=status.HTTP_200_OK,
 )
 def edit_post(
-    post_id: int, data: RequestBody, Authorization: str = Header()
+    post_id: int, data: RequestBody, token: str = Depends(api_key_header)
 ) -> ResponseModel:
     """
     게시글 수정
@@ -99,6 +100,13 @@ def edit_post(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="게시글이 존재하지 않습니다.",
+        )
+    token_user_id = check_access_token(token)
+    user_role = session.get(User, token_user_id.get("user_id"))
+    if user_role != "admin" and token_user_id.get("user_id") != data.author:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="유저 아이디가 다릅니다.",
         )
     data.author = data.author
     data.title = data.title
@@ -124,7 +132,9 @@ def edit_post(
     response_model=ResponseMessageModel,
     status_code=status.HTTP_200_OK,
 )
-def delete_post(post_id: int, Authorization: str = Header()) -> ResponseMessageModel:
+def delete_post(
+    post_id: int, token: str = Depends(api_key_header)
+) -> ResponseMessageModel:
     """
     게시글 삭제
     """
@@ -133,6 +143,13 @@ def delete_post(post_id: int, Authorization: str = Header()) -> ResponseMessageM
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="게시글이 존재하지 않습니다.",
+        )
+    token_user_id = check_access_token(token)
+    user_role = session.get(User, token_user_id.get("user_id"))
+    if user_role.role != "admin" and token_user_id.get("user_id") != data.author:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="유저 아이디가 다릅니다.",
         )
     session.delete(data)
     session.commit()
