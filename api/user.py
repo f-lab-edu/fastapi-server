@@ -1,16 +1,20 @@
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Header, HTTPException, status
+import yaml
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import APIKeyHeader
 from jose import jwt
 from passlib.context import CryptContext
 from sqlmodel import Session, select
 
 from api.api_schema import (
     Content,
+    Login,
     ResponseAccessToken,
     ResponseListModel,
     ResponseMessageModel,
     ResponseUser,
+    Settings,
     UserBody,
     UserConent,
 )
@@ -19,11 +23,18 @@ from database import Post, User, engine
 session = Session(engine)
 
 router = APIRouter(prefix="/api/users", tags=["users"])
+api_key_header = APIKeyHeader(name="Authorization")
 
 password_hashing = CryptContext(schemes=["bcrypt"], deprecated="auto")
-SECRET_KEY = "key01234567890"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_DAYS = 1
+
+with open("config.yaml", "r") as file:
+    yaml_data = yaml.safe_load(file)
+settings = Settings(
+    secret_key=yaml_data.get("secret_key"),
+    algorithm=yaml_data.get("algorithm"),
+    access_token_expire_days=yaml_data.get("access_token_expire_days"),
+)
+
 session_login = []
 
 
@@ -31,7 +42,9 @@ def create_access_token(data: dict, expires_delta: timedelta):
     to_encode = data.copy()
     expire = datetime.utcnow() + expires_delta
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(
+        to_encode, settings.secret_key, algorithm=settings.algorithm
+    )
     return encoded_jwt
 
 
@@ -40,9 +53,8 @@ def verify_password(plain_password, hashed_password):
 
 
 def check_access_token(token):
-    decoded_jwt = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
-    print(decoded_jwt)
-    return
+    decoded_jwt = jwt.decode(token, settings.secret_key, algorithms=settings.algorithm)
+    return decoded_jwt
 
 
 @router.post(
@@ -50,7 +62,7 @@ def check_access_token(token):
     response_model=ResponseMessageModel,
     status_code=status.HTTP_201_CREATED,
 )
-def create_user(data: UserConent):
+def create_user(data: UserConent) -> ResponseMessageModel:
     """
     유저 생성
     """
@@ -80,11 +92,17 @@ def create_user(data: UserConent):
     status_code=status.HTTP_200_OK,
 )
 def edit_user(
-    user_id: str, data: UserBody, Authorization: str = Header()
+    user_id: str, data: UserBody, token: str = Depends(api_key_header)
 ) -> ResponseUser:
     """
     유저 정보 수정
     """
+    token_user_id = check_access_token(token)
+    if token_user_id.get("user_id") != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="유저 아이디가 존재하지 않습니다.",
+        )
     res = session.get(User, user_id)
     if res == None:
         raise HTTPException(
@@ -121,7 +139,9 @@ def edit_user(
     response_model=ResponseMessageModel,
     status_code=status.HTTP_200_OK,
 )
-def delete_user(user_id: str, Authorization: str = Header()) -> ResponseMessageModel:
+def delete_user(
+    user_id: str, token: str = Depends(api_key_header)
+) -> ResponseMessageModel:
     """
     유저 삭제
     """
@@ -142,7 +162,7 @@ def delete_user(user_id: str, Authorization: str = Header()) -> ResponseMessageM
     status_code=status.HTTP_200_OK,
 )
 def get_user_posts(
-    user_id: str, page: int, Authorization: str = Header()
+    user_id: str, page: int, token: str = Depends(api_key_header)
 ) -> ResponseListModel:
     """
     유저별로 작성한 게시글 목록 조회
@@ -170,7 +190,7 @@ def get_user_posts(
     status_code=status.HTTP_200_OK,
 )
 def get_user_comments(
-    user_id: str, page: int, Authorization: str = Header()
+    user_id: str, page: int, token: str = Depends(api_key_header)
 ) -> ResponseListModel:
     """
     유저별로 작성한 댓글 목록 조회
@@ -183,24 +203,24 @@ def get_user_comments(
     "/login",
     status_code=status.HTTP_200_OK,
 )
-def post_user_login(user_id: str, password: str) -> ResponseAccessToken:
+def post_user_login(data: Login) -> ResponseAccessToken:
     """
     유저 로그인
     """
-    db_data = session.get(User, user_id)
+    db_data = session.get(User, data.user_id)
     if db_data == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="유저 아이디가 존재하지 않습니다.",
         )
-    if not db_data or not verify_password(password, db_data.password):
+    if not db_data or not verify_password(data.password, db_data.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="아이디 혹은 비밀번호가 맞지 않습니다.",
         )
-    access_token_expires = timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
+    access_token_expires = timedelta(days=settings.access_token_expire_days)
     access_token = create_access_token(
-        data={"user_id": user_id}, expires_delta=access_token_expires
+        data={"user_id": data.user_id}, expires_delta=access_token_expires
     )
     session_login.append(access_token)
     return ResponseAccessToken(access_token=access_token, token_type="bearer")
@@ -210,11 +230,10 @@ def post_user_login(user_id: str, password: str) -> ResponseAccessToken:
     "/logout",
     status_code=status.HTTP_200_OK,
 )
-def post_user_logout(Authorization: str = Header()) -> ResponseMessageModel:
+def post_user_logout(token: str = Depends(api_key_header)) -> ResponseMessageModel:
     """
     유저 로그아웃
     """
-    token = Authorization
     if token not in session_login:
         return ResponseMessageModel(message="로그아웃 실패")
     token_idx = session_login.index(token)

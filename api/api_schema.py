@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List
 
 from pydantic import BaseModel, Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class RequestBody(BaseModel):
@@ -81,3 +82,14 @@ class ResponseComList(BaseModel):
 class ResponseAccessToken(BaseModel):
     access_token: str
     token_type: str = Field(example="bearer")
+
+
+class Settings(BaseSettings):
+    secret_key: str
+    algorithm: str
+    access_token_expire_days: int
+
+
+class Login(BaseModel):
+    user_id: str
+    password: str
