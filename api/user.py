@@ -40,7 +40,7 @@ def verify_password(plain_password, hashed_password):
 
 
 def check_access_token(token):
-    decoded_jwt = jwt.decode(token, SECRET_KEY, algorithm=ALGORITHM)
+    decoded_jwt = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
     print(decoded_jwt)
     return
 
@@ -200,7 +200,7 @@ def post_user_login(user_id: str, password: str) -> ResponseAccessToken:
         )
     access_token_expires = timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
     access_token = create_access_token(
-        data={"sub": user_id}, expires_delta=access_token_expires
+        data={"user_id": user_id}, expires_delta=access_token_expires
     )
     session_login.append(access_token)
     return ResponseAccessToken(access_token=access_token, token_type="bearer")
