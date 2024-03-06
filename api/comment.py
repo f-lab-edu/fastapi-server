@@ -19,7 +19,7 @@ router = APIRouter(prefix="/api/comments", tags=["comments"])
     response_model=ResponseMessageModel,
     status_code=status.HTTP_201_CREATED,
 )
-def create_comment(data: CommentBody):
+def create_comment(data: CommentBody) -> ResponseMessageModel:
     """
     댓글 생성
     """
@@ -34,7 +34,7 @@ def create_comment(data: CommentBody):
     response_model=ResponseComment,
     status_code=status.HTTP_200_OK,
 )
-def edit_comment(com_id: int, data: CommentConent):
+def edit_comment(com_id: int, data: CommentConent) -> ResponseComment:
     """
     댓글 내용 수정
     """
@@ -62,7 +62,7 @@ def edit_comment(com_id: int, data: CommentConent):
     response_model=ResponseMessageModel,
     status_code=status.HTTP_200_OK,
 )
-def delete_comment(com_id: int):
+def delete_comment(com_id: int) -> ResponseMessageModel:
     """
     댓글 삭제
     """

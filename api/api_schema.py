@@ -75,3 +75,8 @@ class ResponseComment(BaseModel):
 class ResponseComList(BaseModel):
     message: str = Field(example="성공")
     data: List[CommentContent]
+
+
+class ResponseAccessToken(BaseModel):
+    access_token: str
+    token_type: str = Field(example="bearer")

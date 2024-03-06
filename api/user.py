@@ -7,6 +7,7 @@ from sqlmodel import Session, select
 
 from api.api_schema import (
     Content,
+    ResponseAccessToken,
     ResponseListModel,
     ResponseMessageModel,
     ResponseUser,
@@ -65,7 +66,7 @@ def create_user(data: UserConent):
     response_model=ResponseUser,
     status_code=status.HTTP_200_OK,
 )
-def edit_user(user_id: str, data: UserBody):
+def edit_user(user_id: str, data: UserBody) -> ResponseUser:
     """
     유저 정보 수정
     """
@@ -106,7 +107,7 @@ def edit_user(user_id: str, data: UserBody):
     response_model=ResponseMessageModel,
     status_code=status.HTTP_200_OK,
 )
-def delete_user(user_id: str):
+def delete_user(user_id: str) -> ResponseMessageModel:
     """
     유저 삭제
     """
@@ -126,7 +127,7 @@ def delete_user(user_id: str):
     response_model=ResponseListModel,
     status_code=status.HTTP_200_OK,
 )
-def get_user_posts(user_id: str, page: int):
+def get_user_posts(user_id: str, page: int) -> ResponseListModel:
     """
     유저별로 작성한 게시글 목록 조회
     """
@@ -164,7 +165,7 @@ def get_user_comments(user_id: str, page: int) -> ResponseListModel:
     "/login",
     status_code=status.HTTP_200_OK,
 )
-def post_user_login(user_id: str, password: str):
+def post_user_login(user_id: str, password: str) -> ResponseAccessToken:
     """
     유저 로그인
     """
@@ -191,12 +192,12 @@ def post_user_login(user_id: str, password: str):
     "/logout",
     status_code=status.HTTP_200_OK,
 )
-def post_user_logout(token: str):
+def post_user_logout(token: str) -> ResponseMessageModel:
     """
     유저 로그아웃
     """
     if token not in session_login:
-        return {"message": "로그아웃 실패"}
+        return ResponseMessageModel(message="로그아웃 실패")
     token_idx = session_login.index(token)
     session_login.pop(token_idx)
-    return {"message": "로그아웃 성공"}
+    return ResponseMessageModel(message="로그아웃 성공")
