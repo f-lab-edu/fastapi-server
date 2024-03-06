@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from api.api_schema import (
     CommentBody,
@@ -39,17 +39,16 @@ def edit_comment(com_id: int, data: CommentConent):
     댓글 내용 수정
     """
     res = session.get(Comment, com_id)
+    if res == None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="댓글이 존재하지 않습니다.",
+        )
     res.content = data.content
     session.add(res)
     session.commit()
     session.refresh(res)
     data = session.get(Comment, com_id)
-
-    if not data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="댓글 내용 수정 실패",
-        )
     return ResponseComment(
         message=f"댓글 아이디 {com_id} 내용 수정 성공",
         data=CommentConent(
@@ -68,11 +67,11 @@ def delete_comment(com_id: int):
     댓글 삭제
     """
     data = session.get(Comment, com_id)
-    session.delete(data)
-    session.commit()
-    if data is False:
+    if data == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="댓글 삭제 실패",
+            detail="댓글이 존재하지 않습니다.",
         )
+    session.delete(data)
+    session.commit()
     return ResponseMessageModel(message=f"댓글 아이디 {com_id} 삭제 성공")

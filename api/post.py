@@ -66,6 +66,11 @@ def get_post(post_id: int):
     게시글 조회
     """
     data = session.get(Post, post_id)
+    if data == None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="게시글이 존재하지 않습니다.",
+        )
     return ResponseModel(
         message="게시글 조회 성공",
         data=Content(
@@ -87,19 +92,19 @@ def edit_post(post_id: int, data: RequestBody) -> ResponseModel:
     """
     게시글 수정
     """
-    res = session.get(Post, post_id)
-    res.author = data.author
-    res.title = data.title
-    res.content = data.content
-    session.add(res)
-    session.commit()
-    session.refresh(res)
     data = session.get(Post, post_id)
-    if not data:
+    if data == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="게시글 수정 실패",
+            detail="게시글이 존재하지 않습니다.",
         )
+    data.author = data.author
+    data.title = data.title
+    data.content = data.content
+    session.add(data)
+    session.commit()
+    session.refresh(data)
+    data = session.get(Post, post_id)
     return ResponseModel(
         message=f"게시글 번호 {post_id} 수정 성공",
         data=Content(
@@ -122,13 +127,13 @@ def delete_post(post_id: int):
     게시글 삭제
     """
     data = session.get(Post, post_id)
-    session.delete(data)
-    session.commit()
-    if data is False:
+    if data == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="게시글 삭제 실패",
+            detail="게시글이 존재하지 않습니다.",
         )
+    session.delete(data)
+    session.commit()
     return ResponseMessageModel(message=f"게시글 번호 {post_id} 삭제 성공")
 
 

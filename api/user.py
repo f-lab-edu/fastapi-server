@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from jose import jwt
 from passlib.context import CryptContext
 from sqlmodel import Session, select
@@ -69,6 +69,12 @@ def edit_user(user_id: str, data: UserBody):
     """
     유저 정보 수정
     """
+    res = session.get(User, user_id)
+    if res == None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="유저 아이디가 존재하지 않습니다.",
+        )
 
     uppercase_count = sum(1 for word in data.password if word.isupper())
     if len(data.password) < 8 or uppercase_count == 0:
@@ -78,7 +84,6 @@ def edit_user(user_id: str, data: UserBody):
         )
     hashed_password = password_hashing.hash(data.password)
 
-    res = session.get(User, user_id)
     res.password = hashed_password
     res.nickname = data.nickname
     session.add(res)
@@ -86,11 +91,6 @@ def edit_user(user_id: str, data: UserBody):
     session.refresh(res)
     data = session.get(User, user_id)
 
-    if not data:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="유저 정보 수정 실패",
-        )
     return ResponseUser(
         message=f"유저 아이디 {user_id} 수정 성공",
         data=UserConent(
@@ -111,13 +111,13 @@ def delete_user(user_id: str):
     유저 삭제
     """
     data = session.get(User, user_id)
-    session.delete(data)
-    session.commit()
-    if data is False:
+    if data == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="유저 삭제 실패",
+            detail="유저 삭제 실패. 유저 아이디가 존재하지 않습니다.",
         )
+    session.delete(data)
+    session.commit()
     return ResponseMessageModel(message=f"유저 아이디 {user_id} 삭제 성공")
 
 
@@ -169,11 +169,15 @@ def post_user_login(user_id: str, password: str):
     유저 로그인
     """
     db_data = session.get(User, user_id)
+    if db_data == None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="유저 아이디가 존재하지 않습니다.",
+        )
     if not db_data or not verify_password(password, db_data.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="아이디 혹은 비밀번호가 맞지 않습니다.",
-            headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
     access_token = create_access_token(
