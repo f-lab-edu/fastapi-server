@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Header, HTTPException, status
 from jose import jwt
 from passlib.context import CryptContext
 from sqlmodel import Session, select
@@ -39,6 +39,12 @@ def verify_password(plain_password, hashed_password):
     return password_hashing.verify(plain_password, hashed_password)
 
 
+def check_access_token(token):
+    decoded_jwt = jwt.decode(token, SECRET_KEY, algorithm=ALGORITHM)
+    print(decoded_jwt)
+    return
+
+
 @router.post(
     "/",
     response_model=ResponseMessageModel,
@@ -55,7 +61,14 @@ def create_user(data: UserConent):
             detail="유저 비밀번호가 최소 8자 이상, 대문자 1개 이상 포함되는지 확인해주세요.",
         )
     hashed_password = password_hashing.hash(data.password)
-    data = User(user_id=data.user_id, password=hashed_password, nickname=data.nickname)
+    if data.role != "member" or data.role != "admin":
+        data.role = "member"
+    data = User(
+        user_id=data.user_id,
+        password=hashed_password,
+        nickname=data.nickname,
+        role=data.role,
+    )
     session.add(data)
     session.commit()
     return ResponseMessageModel(message="유저 생성 성공")
@@ -66,7 +79,9 @@ def create_user(data: UserConent):
     response_model=ResponseUser,
     status_code=status.HTTP_200_OK,
 )
-def edit_user(user_id: str, data: UserBody) -> ResponseUser:
+def edit_user(
+    user_id: str, data: UserBody, Authorization: str = Header()
+) -> ResponseUser:
     """
     유저 정보 수정
     """
@@ -91,7 +106,6 @@ def edit_user(user_id: str, data: UserBody) -> ResponseUser:
     session.commit()
     session.refresh(res)
     data = session.get(User, user_id)
-
     return ResponseUser(
         message=f"유저 아이디 {user_id} 수정 성공",
         data=UserConent(
@@ -107,7 +121,7 @@ def edit_user(user_id: str, data: UserBody) -> ResponseUser:
     response_model=ResponseMessageModel,
     status_code=status.HTTP_200_OK,
 )
-def delete_user(user_id: str) -> ResponseMessageModel:
+def delete_user(user_id: str, Authorization: str = Header()) -> ResponseMessageModel:
     """
     유저 삭제
     """
@@ -127,7 +141,9 @@ def delete_user(user_id: str) -> ResponseMessageModel:
     response_model=ResponseListModel,
     status_code=status.HTTP_200_OK,
 )
-def get_user_posts(user_id: str, page: int) -> ResponseListModel:
+def get_user_posts(
+    user_id: str, page: int, Authorization: str = Header()
+) -> ResponseListModel:
     """
     유저별로 작성한 게시글 목록 조회
     """
@@ -153,7 +169,9 @@ def get_user_posts(user_id: str, page: int) -> ResponseListModel:
     response_model=ResponseListModel,
     status_code=status.HTTP_200_OK,
 )
-def get_user_comments(user_id: str, page: int) -> ResponseListModel:
+def get_user_comments(
+    user_id: str, page: int, Authorization: str = Header()
+) -> ResponseListModel:
     """
     유저별로 작성한 댓글 목록 조회
     """
@@ -185,17 +203,18 @@ def post_user_login(user_id: str, password: str) -> ResponseAccessToken:
         data={"sub": user_id}, expires_delta=access_token_expires
     )
     session_login.append(access_token)
-    return {"access_token": access_token, "token_type": "bearer"}
+    return ResponseAccessToken(access_token=access_token, token_type="bearer")
 
 
 @router.post(
     "/logout",
     status_code=status.HTTP_200_OK,
 )
-def post_user_logout(token: str) -> ResponseMessageModel:
+def post_user_logout(Authorization: str = Header()) -> ResponseMessageModel:
     """
     유저 로그아웃
     """
+    token = Authorization
     if token not in session_login:
         return ResponseMessageModel(message="로그아웃 실패")
     token_idx = session_login.index(token)
