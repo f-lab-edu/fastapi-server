@@ -5,7 +5,7 @@ from fastapi.security import APIKeyHeader
 from jose import jwt
 from passlib.context import CryptContext
 
-from api.api_schema import Settings
+from config import Settings
 
 api_key_header = APIKeyHeader(name="Authorization")
 

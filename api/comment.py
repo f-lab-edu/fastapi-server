@@ -49,7 +49,7 @@ def edit_comment(
         )
     token_user_id = check_access_token(token)
     user_role = session.get(User, token_user_id.get("user_id"))
-    if user_role != "admin" and token_user_id.get("user_id") != data.author:
+    if user_role != "admin" and token_user_id.get("user_id") != res.author_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="유저 아이디가 다릅니다.",
