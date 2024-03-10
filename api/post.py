@@ -9,6 +9,7 @@ from api.api_schema import (
     ResponseListModel,
     ResponseMessageModel,
     ResponseModel,
+    UserContent,
 )
 from common import api_key_header, check_access_token
 from database import Comment, Post, User, engine
@@ -102,8 +103,8 @@ def edit_post(
             detail="게시글이 존재하지 않습니다.",
         )
     token_user_id = check_access_token(token)
-    user_role = session.get(User, token_user_id.get("user_id"))
-    if user_role != "admin" and token_user_id.get("user_id") != data.author:
+    user_content = session.get(User, token_user_id.get("user_id"))
+    if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="유저 아이디가 다릅니다.",

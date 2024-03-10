@@ -13,7 +13,7 @@ from api.api_schema import (
     ResponseMessageModel,
     ResponseUser,
     UserBody,
-    UserConent,
+    UserContent,
 )
 from common import (
     api_key_header,
@@ -37,7 +37,7 @@ session_login = []
     response_model=ResponseMessageModel,
     status_code=status.HTTP_201_CREATED,
 )
-def create_user(data: UserConent) -> ResponseMessageModel:
+def create_user(data: UserContent) -> ResponseMessageModel:
     """
     유저 생성
     """
@@ -48,7 +48,9 @@ def create_user(data: UserConent) -> ResponseMessageModel:
             detail="유저 비밀번호가 최소 8자 이상, 대문자 1개 이상 포함되는지 확인해주세요.",
         )
     hashed_password = password_hashing.hash(data.password)
-    if data.role != "member" or data.role != "admin":
+    if data.role == "admin":
+        data.role = "admin"
+    elif data.role != "member":
         data.role = "member"
     data = User(
         user_id=data.user_id,
@@ -78,10 +80,9 @@ def edit_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="유저 아이디가 존재하지 않습니다.",
         )
-
     token_user_id = check_access_token(token)
-    user_role = session.get(User, token_user_id.get("user_id"))
-    if user_role != "admin" and token_user_id.get("user_id") != data.author:
+    user_content = session.get(User, token_user_id.get("user_id"))
+    if user_content.role != "admin" and token_user_id.get("user_id") != res.user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="유저 아이디가 다릅니다.",
@@ -97,16 +98,18 @@ def edit_user(
 
     res.password = hashed_password
     res.nickname = data.nickname
+    res.role = data.role
     session.add(res)
     session.commit()
     session.refresh(res)
     data = session.get(User, user_id)
     return ResponseUser(
         message=f"유저 아이디 {user_id} 수정 성공",
-        data=UserConent(
+        data=UserContent(
             user_id=user_id,
             password=data.password,
             nickname=data.nickname,
+            role=data.role,
         ),
     )
 
@@ -129,8 +132,8 @@ def delete_user(
             detail="유저 삭제 실패. 유저 아이디가 존재하지 않습니다.",
         )
     token_user_id = check_access_token(token)
-    user_role = session.get(User, token_user_id.get("user_id"))
-    if user_role != "admin" and token_user_id.get("user_id") != data.author:
+    user_content = session.get(User, token_user_id.get("user_id"))
+    if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="유저 아이디가 다릅니다.",
@@ -152,8 +155,8 @@ def get_user_posts(
     유저별로 작성한 게시글 목록 조회
     """
     token_user_id = check_access_token(token)
-    user_role = session.get(User, token_user_id.get("user_id"))
-    if user_role != "admin" and token_user_id.get("user_id") != data.author:
+    user_content = session.get(User, token_user_id.get("user_id"))
+    if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="유저 아이디가 다릅니다.",
@@ -187,8 +190,8 @@ def get_user_comments(
     유저별로 작성한 댓글 목록 조회
     """
     token_user_id = check_access_token(token)
-    user_role = session.get(User, token_user_id.get("user_id"))
-    if user_role != "admin" and token_user_id.get("user_id") != data.author:
+    user_content = session.get(User, token_user_id.get("user_id"))
+    if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="유저 아이디가 다릅니다.",
@@ -246,7 +249,7 @@ def post_user_logout(token: str = Depends(api_key_header)) -> ResponseMessageMod
     유저 로그아웃
     """
     if token not in session_login:
-        return ResponseMessageModel(message="로그아웃 실패")
+        return ResponseMessageModel(message="로그아웃 성공")
     token_idx = session_login.index(token)
     session_login.pop(token_idx)
     return ResponseMessageModel(message="로그아웃 성공")
