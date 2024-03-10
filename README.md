@@ -13,50 +13,41 @@ flowchart LR
 ## 버전 목록
 - python : 3.12.0
 
-## 환경 설정 방법
-### 1. pyenv 설치 방법
-```brew install pyenv```
+## fastAPI 서버 실행 및 종료 방법
+### 1. 설치 방법
+#### (1). git clone으로 레포지토리 다운로드
+```
+git clone https://github.com/f-lab-edu/fastapi-server.git
+```
 
-### 2. pyenv로 파이썬 버전 설치
-```pyenv install 3.12.0```
-
-### 3. pyenv 실행
-```pyenv shell 3.12.0```
-
-### 4. poetry 설치 방법
-```curl -sSL https://install.python-poetry.org | python3 -```
-
-### 5. poetry 가상환경 실행
+#### (2). poetry 가상환경 실행
 ```poetry shell```
 
-### 6. poetry로 필요한 패키지 일괄 설치
+#### (3). 서버 실행에 필요한 패키지 다운로드
 ```poetry install```
 
-### 7. poetry 종료 방법
-```exit```
-
-## fastAPI 서버 실행 및 종료 방법
-
-### 1. 실행 방법
-```uvicorn main:app --reload```
-
-### 2. 종료 방법
-```ctrl + c```
-
-## 주의 사항 ##
-- config.yaml를 직접 생성해서 추가해야 실행이 됩니다.
-
+#### (4). 환경 변수 파일 생성 : config.yaml
 - config.yaml 위치
 ```
 /config.yaml
 ```
 
-### config.yaml 내용 예시 ###
+- config.yaml 내용 예시
 ```
 secret_key: key01234567890
 algorithm: HS256
 access_token_expire_days: 1
 ```
+
+### 2. 서버 실행 방법
+```uvicorn main:app --reload```
+
+### 3. 종료 방법
+#### (1). 서버 종료
+```ctrl + c```
+
+#### (2). poetry 가상환경 종료
+```exit```
 
 ## API 사용 방법 및 결과 예시
 ### 게시글 전체 목록 조회 API
