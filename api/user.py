@@ -41,6 +41,12 @@ def create_user(data: UserContent) -> ResponseMessageModel:
     """
     유저 생성
     """
+    cheacked_id = session.get(User, data.user_id)
+    if cheacked_id != None and data.user_id == cheacked_id.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="유저 아이디가 이미 존재합니다.",
+        )
     uppercase_count = sum(1 for word in data.password if word.isupper())
     if len(data.password) < 8 or uppercase_count == 0:
         raise HTTPException(
@@ -98,7 +104,10 @@ def edit_user(
 
     res.password = hashed_password
     res.nickname = data.nickname
-    res.role = data.role
+    if user_content.role == "admin":
+        res.role = data.role
+    else:
+        res.role = "member"
     session.add(res)
     session.commit()
     session.refresh(res)
