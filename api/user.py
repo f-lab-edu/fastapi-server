@@ -1,48 +1,35 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
-from fastapi import APIRouter, Header, HTTPException, status
-from jose import jwt
-from passlib.context import CryptContext
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 
 from api.api_schema import (
+    CommentContent,
     Content,
+    Login,
     ResponseAccessToken,
+    ResponseComList,
     ResponseListModel,
     ResponseMessageModel,
     ResponseUser,
     UserBody,
-    UserConent,
+    UserContent,
 )
-from database import Post, User, engine
+from common import (
+    api_key_header,
+    check_access_token,
+    create_access_token,
+    password_hashing,
+    settings,
+    verify_password,
+)
+from database import Comment, Post, User, engine
 
 session = Session(engine)
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
-password_hashing = CryptContext(schemes=["bcrypt"], deprecated="auto")
-SECRET_KEY = "key01234567890"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_DAYS = 1
 session_login = []
-
-
-def create_access_token(data: dict, expires_delta: timedelta):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + expires_delta
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-
-def verify_password(plain_password, hashed_password):
-    return password_hashing.verify(plain_password, hashed_password)
-
-
-def check_access_token(token):
-    decoded_jwt = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
-    print(decoded_jwt)
-    return
 
 
 @router.post(
@@ -50,7 +37,7 @@ def check_access_token(token):
     response_model=ResponseMessageModel,
     status_code=status.HTTP_201_CREATED,
 )
-def create_user(data: UserConent):
+def create_user(data: UserContent) -> ResponseMessageModel:
     """
     유저 생성
     """
@@ -61,7 +48,9 @@ def create_user(data: UserConent):
             detail="유저 비밀번호가 최소 8자 이상, 대문자 1개 이상 포함되는지 확인해주세요.",
         )
     hashed_password = password_hashing.hash(data.password)
-    if data.role != "member" or data.role != "admin":
+    if data.role == "admin":
+        data.role = "admin"
+    elif data.role != "member":
         data.role = "member"
     data = User(
         user_id=data.user_id,
@@ -80,7 +69,7 @@ def create_user(data: UserConent):
     status_code=status.HTTP_200_OK,
 )
 def edit_user(
-    user_id: str, data: UserBody, Authorization: str = Header()
+    user_id: str, data: UserBody, token: str = Depends(api_key_header)
 ) -> ResponseUser:
     """
     유저 정보 수정
@@ -90,6 +79,13 @@ def edit_user(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="유저 아이디가 존재하지 않습니다.",
+        )
+    token_user_id = check_access_token(token)
+    user_content = session.get(User, token_user_id.get("user_id"))
+    if user_content.role != "admin" and token_user_id.get("user_id") != res.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="유저 아이디가 다릅니다.",
         )
 
     uppercase_count = sum(1 for word in data.password if word.isupper())
@@ -102,16 +98,18 @@ def edit_user(
 
     res.password = hashed_password
     res.nickname = data.nickname
+    res.role = data.role
     session.add(res)
     session.commit()
     session.refresh(res)
     data = session.get(User, user_id)
     return ResponseUser(
         message=f"유저 아이디 {user_id} 수정 성공",
-        data=UserConent(
+        data=UserContent(
             user_id=user_id,
             password=data.password,
             nickname=data.nickname,
+            role=data.role,
         ),
     )
 
@@ -121,7 +119,9 @@ def edit_user(
     response_model=ResponseMessageModel,
     status_code=status.HTTP_200_OK,
 )
-def delete_user(user_id: str, Authorization: str = Header()) -> ResponseMessageModel:
+def delete_user(
+    user_id: str, token: str = Depends(api_key_header)
+) -> ResponseMessageModel:
     """
     유저 삭제
     """
@@ -130,6 +130,13 @@ def delete_user(user_id: str, Authorization: str = Header()) -> ResponseMessageM
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="유저 삭제 실패. 유저 아이디가 존재하지 않습니다.",
+        )
+    token_user_id = check_access_token(token)
+    user_content = session.get(User, token_user_id.get("user_id"))
+    if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="유저 아이디가 다릅니다.",
         )
     session.delete(data)
     session.commit()
@@ -142,11 +149,18 @@ def delete_user(user_id: str, Authorization: str = Header()) -> ResponseMessageM
     status_code=status.HTTP_200_OK,
 )
 def get_user_posts(
-    user_id: str, page: int, Authorization: str = Header()
+    user_id: str, page: int, token: str = Depends(api_key_header)
 ) -> ResponseListModel:
     """
     유저별로 작성한 게시글 목록 조회
     """
+    token_user_id = check_access_token(token)
+    user_content = session.get(User, token_user_id.get("user_id"))
+    if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="유저 아이디가 다릅니다.",
+        )
     data = []
     offset = (page - 1) * 100
     results = session.exec(
@@ -166,41 +180,61 @@ def get_user_posts(
 
 @router.get(
     "/{user_id}/comments/",
-    response_model=ResponseListModel,
+    response_model=ResponseComList,
     status_code=status.HTTP_200_OK,
 )
 def get_user_comments(
-    user_id: str, page: int, Authorization: str = Header()
-) -> ResponseListModel:
+    user_id: str, page: int, token: str = Depends(api_key_header)
+) -> ResponseComList:
     """
     유저별로 작성한 댓글 목록 조회
     """
-    data = page
-    return ResponseListModel(message="유저별 작성 댓글 조회 성공", data=data)
+    token_user_id = check_access_token(token)
+    user_content = session.get(User, token_user_id.get("user_id"))
+    if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="유저 아이디가 다릅니다.",
+        )
+    data = []
+    offset = (page - 1) * 100
+    results = session.exec(
+        select(Comment).where(Comment.author_id == user_id).offset(offset).limit(100)
+    ).all()
+    for res in results:
+        res_dict = CommentContent(
+            com_id=res.com_id,
+            author_id=res.author_id,
+            post_id=res.post_id,
+            content=res.content,
+            created_at=res.created_at,
+        )
+        data.append(res_dict)
+    return ResponseComList(message="유저별 작성 댓글 조회 성공", data=data)
 
 
 @router.post(
     "/login",
     status_code=status.HTTP_200_OK,
 )
-def post_user_login(user_id: str, password: str) -> ResponseAccessToken:
+def post_user_login(data: Login) -> ResponseAccessToken:
     """
     유저 로그인
     """
-    db_data = session.get(User, user_id)
+    db_data = session.get(User, data.user_id)
     if db_data == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="유저 아이디가 존재하지 않습니다.",
         )
-    if not db_data or not verify_password(password, db_data.password):
+    if not db_data or not verify_password(data.password, db_data.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="아이디 혹은 비밀번호가 맞지 않습니다.",
         )
-    access_token_expires = timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
+    access_token_expires = timedelta(days=settings.access_token_expire_days)
     access_token = create_access_token(
-        data={"user_id": user_id}, expires_delta=access_token_expires
+        data={"user_id": data.user_id}, expires_delta=access_token_expires
     )
     session_login.append(access_token)
     return ResponseAccessToken(access_token=access_token, token_type="bearer")
@@ -210,13 +244,12 @@ def post_user_login(user_id: str, password: str) -> ResponseAccessToken:
     "/logout",
     status_code=status.HTTP_200_OK,
 )
-def post_user_logout(Authorization: str = Header()) -> ResponseMessageModel:
+def post_user_logout(token: str = Depends(api_key_header)) -> ResponseMessageModel:
     """
     유저 로그아웃
     """
-    token = Authorization
     if token not in session_login:
-        return ResponseMessageModel(message="로그아웃 실패")
+        return ResponseMessageModel(message="로그아웃 성공")
     token_idx = session_login.index(token)
     session_login.pop(token_idx)
     return ResponseMessageModel(message="로그아웃 성공")

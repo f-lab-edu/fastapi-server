@@ -3,6 +3,7 @@
 
 ## 추가 ##
 *.db
+config.yaml
 
 ### macOS ###
 # General
