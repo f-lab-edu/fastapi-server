@@ -104,10 +104,6 @@ def edit_user(
 
     res.password = hashed_password
     res.nickname = data.nickname
-    if user_content.role == "admin":
-        res.role = data.role
-    else:
-        res.role = "member"
     session.add(res)
     session.commit()
     session.refresh(res)
@@ -118,7 +114,6 @@ def edit_user(
             user_id=user_id,
             password=data.password,
             nickname=data.nickname,
-            role=data.role,
         ),
     )
 
@@ -158,7 +153,7 @@ def delete_user(
     status_code=status.HTTP_200_OK,
 )
 def get_user_posts(
-    user_id: str, page: int, token: str = Depends(api_key_header)
+    user_id: str, page: int = 1, token: str = Depends(api_key_header)
 ) -> ResponseListModel:
     """
     유저별로 작성한 게시글 목록 조회
@@ -193,7 +188,7 @@ def get_user_posts(
     status_code=status.HTTP_200_OK,
 )
 def get_user_comments(
-    user_id: str, page: int, token: str = Depends(api_key_header)
+    user_id: str, page: int = 1, token: str = Depends(api_key_header)
 ) -> ResponseComList:
     """
     유저별로 작성한 댓글 목록 조회

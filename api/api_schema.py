@@ -35,7 +35,6 @@ class ResponseMessageModel(BaseModel):
 class UserBody(BaseModel):
     password: str
     nickname: str
-    role: str
 
 
 class UserContent(BaseModel):

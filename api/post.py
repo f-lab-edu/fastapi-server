@@ -9,7 +9,6 @@ from api.api_schema import (
     ResponseListModel,
     ResponseMessageModel,
     ResponseModel,
-    UserContent,
 )
 from common import api_key_header, check_access_token
 from database import Comment, Post, User, engine
@@ -24,12 +23,21 @@ router = APIRouter(prefix="/api/posts", tags=["posts"])
     response_model=ResponseMessageModel,
     status_code=status.HTTP_201_CREATED,
 )
-def create_post(data: RequestBody) -> ResponseMessageModel:
+def create_post(
+    data: RequestBody, token: str = Depends(api_key_header)
+) -> ResponseMessageModel:
     """
     게시글 생성
     """
-    data = Post(author=data.author, title=data.title, content=data.content)
-    session.add(data)
+    token_user_id = check_access_token(token)
+    user_content = session.get(User, token_user_id.get("user_id"))
+    if user_content.user_id != data.author:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="유저 아이디가 다릅니다.",
+        )
+    post = Post(author=data.author, title=data.title, content=data.content)
+    session.add(post)
     session.commit()
     return ResponseMessageModel(message="게시글 생성 성공")
 
@@ -39,7 +47,7 @@ def create_post(data: RequestBody) -> ResponseMessageModel:
     response_model=ResponseListModel,
     status_code=status.HTTP_200_OK,
 )
-def get_posts(page: int) -> ResponseListModel:
+def get_posts(page: int = 1) -> ResponseListModel:
     """
     게시글 목록 조회
     """
@@ -96,26 +104,26 @@ def edit_post(
     """
     게시글 수정
     """
-    data = session.get(Post, post_id)
-    if data == None:
+    post = session.get(Post, post_id)
+    if post == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="게시글이 존재하지 않습니다.",
         )
     token_user_id = check_access_token(token)
     user_content = session.get(User, token_user_id.get("user_id"))
-    if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
+    if user_content.role != "admin" and token_user_id.get("user_id") != post.author:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="유저 아이디가 다릅니다.",
         )
-    data.author = data.author
-    data.title = data.title
-    data.content = data.content
-    session.add(data)
+    post.author = data.author
+    post.title = data.title
+    post.content = data.content
+    session.add(post)
     session.commit()
-    session.refresh(data)
-    data = session.get(Post, post_id)
+    session.refresh(post)
+    post = session.get(Post, post_id)
     return ResponseModel(
         message=f"게시글 번호 {post_id} 수정 성공",
         data=Content(
@@ -162,7 +170,7 @@ def delete_post(
     response_model=ResponseComList,
     status_code=status.HTTP_200_OK,
 )
-def get_post_comments(post_id: int, page: int) -> ResponseComList:
+def get_post_comments(post_id: int, page: int = 1) -> ResponseComList:
     """
     게시글 별로 작성된 댓글 목록 조회
     """
