@@ -1,13 +1,7 @@
 from datetime import datetime
-from enum import Enum
 from typing import List
 
 from pydantic import BaseModel, Field
-
-
-class UserRole(str, Enum):
-    member = "member"
-    admin = "admin"
 
 
 class RequestBody(BaseModel):
@@ -49,16 +43,9 @@ class UserSign(BaseModel):
     nickname: str
 
 
-class UserContent(BaseModel):
-    user_id: str
-    password: str
-    nickname: str
-    role: UserRole
-
-
 class ResponseUser(BaseModel):
     message: str = Field(example="성공")
-    data: UserContent
+    data: UserSign
 
 
 class CommentContent(BaseModel):

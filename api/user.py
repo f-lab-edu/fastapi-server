@@ -58,7 +58,6 @@ def create_user(data: UserSign) -> ResponseMessageModel:
         user_id=data.user_id,
         password=hashed_password,
         nickname=data.nickname,
-        role=data.role,
     )
     session.add(data)
     session.commit()
@@ -106,7 +105,7 @@ def edit_user(
     data = session.get(User, user_id)
     return ResponseUser(
         message=f"유저 아이디 {user_id} 수정 성공",
-        data=UserBody(
+        data=UserSign(
             user_id=user_id,
             password=data.password,
             nickname=data.nickname,
