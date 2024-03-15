@@ -35,19 +35,17 @@ class ResponseMessageModel(BaseModel):
 class UserBody(BaseModel):
     password: str
     nickname: str
-    role: str
 
 
-class UserContent(BaseModel):
+class UserSign(BaseModel):
     user_id: str
     password: str
     nickname: str
-    role: str
 
 
 class ResponseUser(BaseModel):
     message: str = Field(example="성공")
-    data: UserContent
+    data: UserSign
 
 
 class CommentContent(BaseModel):
@@ -59,9 +57,8 @@ class CommentContent(BaseModel):
 
 
 class CommentBody(BaseModel):
-    com_id: int
     author_id: str
-    post_id: int
+    post_id: int = 1
     content: str
 
 

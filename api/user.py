@@ -13,12 +13,12 @@ from api.api_schema import (
     ResponseMessageModel,
     ResponseUser,
     UserBody,
-    UserContent,
+    UserSign,
 )
 from common import (
     api_key_header,
-    check_access_token,
-    create_access_token,
+    decode_access_token,
+    encode_access_token,
     password_hashing,
     settings,
     verify_password,
@@ -37,7 +37,7 @@ session_login = []
     response_model=ResponseMessageModel,
     status_code=status.HTTP_201_CREATED,
 )
-def create_user(data: UserContent) -> ResponseMessageModel:
+def create_user(data: UserSign) -> ResponseMessageModel:
     """
     유저 생성
     """
@@ -54,15 +54,10 @@ def create_user(data: UserContent) -> ResponseMessageModel:
             detail="유저 비밀번호가 최소 8자 이상, 대문자 1개 이상 포함되는지 확인해주세요.",
         )
     hashed_password = password_hashing.hash(data.password)
-    if data.role == "admin":
-        data.role = "admin"
-    elif data.role != "member":
-        data.role = "member"
     data = User(
         user_id=data.user_id,
         password=hashed_password,
         nickname=data.nickname,
-        role=data.role,
     )
     session.add(data)
     session.commit()
@@ -86,7 +81,7 @@ def edit_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="유저 아이디가 존재하지 않습니다.",
         )
-    token_user_id = check_access_token(token)
+    token_user_id = decode_access_token(token)
     user_content = session.get(User, token_user_id.get("user_id"))
     if user_content.role != "admin" and token_user_id.get("user_id") != res.user_id:
         raise HTTPException(
@@ -104,21 +99,16 @@ def edit_user(
 
     res.password = hashed_password
     res.nickname = data.nickname
-    if user_content.role == "admin":
-        res.role = data.role
-    else:
-        res.role = "member"
     session.add(res)
     session.commit()
     session.refresh(res)
     data = session.get(User, user_id)
     return ResponseUser(
         message=f"유저 아이디 {user_id} 수정 성공",
-        data=UserContent(
+        data=UserSign(
             user_id=user_id,
             password=data.password,
             nickname=data.nickname,
-            role=data.role,
         ),
     )
 
@@ -140,7 +130,7 @@ def delete_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="유저 삭제 실패. 유저 아이디가 존재하지 않습니다.",
         )
-    token_user_id = check_access_token(token)
+    token_user_id = decode_access_token(token)
     user_content = session.get(User, token_user_id.get("user_id"))
     if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
         raise HTTPException(
@@ -158,12 +148,12 @@ def delete_user(
     status_code=status.HTTP_200_OK,
 )
 def get_user_posts(
-    user_id: str, page: int, token: str = Depends(api_key_header)
+    user_id: str, page: int = 1, token: str = Depends(api_key_header)
 ) -> ResponseListModel:
     """
     유저별로 작성한 게시글 목록 조회
     """
-    token_user_id = check_access_token(token)
+    token_user_id = decode_access_token(token)
     user_content = session.get(User, token_user_id.get("user_id"))
     if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
         raise HTTPException(
@@ -193,12 +183,12 @@ def get_user_posts(
     status_code=status.HTTP_200_OK,
 )
 def get_user_comments(
-    user_id: str, page: int, token: str = Depends(api_key_header)
+    user_id: str, page: int = 1, token: str = Depends(api_key_header)
 ) -> ResponseComList:
     """
     유저별로 작성한 댓글 목록 조회
     """
-    token_user_id = check_access_token(token)
+    token_user_id = decode_access_token(token)
     user_content = session.get(User, token_user_id.get("user_id"))
     if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
         raise HTTPException(
@@ -242,7 +232,7 @@ def post_user_login(data: Login) -> ResponseAccessToken:
             detail="아이디 혹은 비밀번호가 맞지 않습니다.",
         )
     access_token_expires = timedelta(days=settings.access_token_expire_days)
-    access_token = create_access_token(
+    access_token = encode_access_token(
         data={"user_id": data.user_id}, expires_delta=access_token_expires
     )
     session_login.append(access_token)
