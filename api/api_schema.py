@@ -1,7 +1,13 @@
 from datetime import datetime
+from enum import Enum
 from typing import List
 
 from pydantic import BaseModel, Field
+
+
+class UserRole(str, Enum):
+    member = "member"
+    admin = "admin"
 
 
 class RequestBody(BaseModel):
@@ -37,11 +43,17 @@ class UserBody(BaseModel):
     nickname: str
 
 
+class UserSign(BaseModel):
+    user_id: str
+    password: str
+    nickname: str
+
+
 class UserContent(BaseModel):
     user_id: str
     password: str
     nickname: str
-    role: str
+    role: UserRole
 
 
 class ResponseUser(BaseModel):
@@ -58,9 +70,8 @@ class CommentContent(BaseModel):
 
 
 class CommentBody(BaseModel):
-    com_id: int
     author_id: str
-    post_id: int
+    post_id: int = 1
     content: str
 
 

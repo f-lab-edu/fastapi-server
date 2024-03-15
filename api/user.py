@@ -13,7 +13,7 @@ from api.api_schema import (
     ResponseMessageModel,
     ResponseUser,
     UserBody,
-    UserContent,
+    UserSign,
 )
 from common import (
     api_key_header,
@@ -37,7 +37,7 @@ session_login = []
     response_model=ResponseMessageModel,
     status_code=status.HTTP_201_CREATED,
 )
-def create_user(data: UserContent) -> ResponseMessageModel:
+def create_user(data: UserSign) -> ResponseMessageModel:
     """
     유저 생성
     """
@@ -54,10 +54,6 @@ def create_user(data: UserContent) -> ResponseMessageModel:
             detail="유저 비밀번호가 최소 8자 이상, 대문자 1개 이상 포함되는지 확인해주세요.",
         )
     hashed_password = password_hashing.hash(data.password)
-    if data.role == "admin":
-        data.role = "admin"
-    elif data.role != "member":
-        data.role = "member"
     data = User(
         user_id=data.user_id,
         password=hashed_password,
@@ -110,7 +106,7 @@ def edit_user(
     data = session.get(User, user_id)
     return ResponseUser(
         message=f"유저 아이디 {user_id} 수정 성공",
-        data=UserContent(
+        data=UserBody(
             user_id=user_id,
             password=data.password,
             nickname=data.nickname,
