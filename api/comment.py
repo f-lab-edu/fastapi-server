@@ -7,7 +7,7 @@ from api.api_schema import (
     ResponseComment,
     ResponseMessageModel,
 )
-from common import api_key_header, check_access_token
+from common import api_key_header, decode_access_token
 from database import Comment, User, engine
 
 session = Session(engine)
@@ -47,7 +47,7 @@ def edit_comment(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="댓글이 존재하지 않습니다.",
         )
-    token_user_id = check_access_token(token)
+    token_user_id = decode_access_token(token)
     user_content = session.get(User, token_user_id.get("user_id"))
     if user_content.role != "admin" and token_user_id.get("user_id") != res.author_id:
         raise HTTPException(
@@ -84,7 +84,7 @@ def delete_comment(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="댓글이 존재하지 않습니다.",
         )
-    token_user_id = check_access_token(token)
+    token_user_id = decode_access_token(token)
     user_content = session.get(User, token_user_id.get("user_id"))
     if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
         raise HTTPException(

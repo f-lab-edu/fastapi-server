@@ -17,8 +17,8 @@ from api.api_schema import (
 )
 from common import (
     api_key_header,
-    check_access_token,
-    create_access_token,
+    decode_access_token,
+    encode_access_token,
     password_hashing,
     settings,
     verify_password,
@@ -86,7 +86,7 @@ def edit_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="유저 아이디가 존재하지 않습니다.",
         )
-    token_user_id = check_access_token(token)
+    token_user_id = decode_access_token(token)
     user_content = session.get(User, token_user_id.get("user_id"))
     if user_content.role != "admin" and token_user_id.get("user_id") != res.user_id:
         raise HTTPException(
@@ -135,7 +135,7 @@ def delete_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="유저 삭제 실패. 유저 아이디가 존재하지 않습니다.",
         )
-    token_user_id = check_access_token(token)
+    token_user_id = decode_access_token(token)
     user_content = session.get(User, token_user_id.get("user_id"))
     if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
         raise HTTPException(
@@ -158,7 +158,7 @@ def get_user_posts(
     """
     유저별로 작성한 게시글 목록 조회
     """
-    token_user_id = check_access_token(token)
+    token_user_id = decode_access_token(token)
     user_content = session.get(User, token_user_id.get("user_id"))
     if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
         raise HTTPException(
@@ -193,7 +193,7 @@ def get_user_comments(
     """
     유저별로 작성한 댓글 목록 조회
     """
-    token_user_id = check_access_token(token)
+    token_user_id = decode_access_token(token)
     user_content = session.get(User, token_user_id.get("user_id"))
     if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
         raise HTTPException(
@@ -237,7 +237,7 @@ def post_user_login(data: Login) -> ResponseAccessToken:
             detail="아이디 혹은 비밀번호가 맞지 않습니다.",
         )
     access_token_expires = timedelta(days=settings.access_token_expire_days)
-    access_token = create_access_token(
+    access_token = encode_access_token(
         data={"user_id": data.user_id}, expires_delta=access_token_expires
     )
     session_login.append(access_token)

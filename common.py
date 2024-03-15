@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import Dict, Union
 
 import yaml
 from fastapi.security import APIKeyHeader
@@ -21,7 +22,7 @@ settings = Settings(
 )
 
 
-def create_access_token(data: dict, expires_delta: timedelta):
+def encode_access_token(data: dict, expires_delta: timedelta) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + expires_delta
     to_encode.update({"exp": expire})
@@ -31,10 +32,10 @@ def create_access_token(data: dict, expires_delta: timedelta):
     return encoded_jwt
 
 
-def verify_password(plain_password, hashed_password):
+def verify_password(plain_password, hashed_password) -> bool:
     return password_hashing.verify(plain_password, hashed_password)
 
 
-def check_access_token(token):
+def decode_access_token(token) -> Dict[str, Union[str, int]]:
     decoded_jwt = jwt.decode(token, settings.secret_key, algorithms=settings.algorithm)
     return decoded_jwt
