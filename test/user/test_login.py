@@ -1,10 +1,10 @@
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, SQLModel
 
 from api.api_schema import Login, UserRole
 from common import password_hashing
-from database import User
+from database import User, engine
 from main import app
 
 client = TestClient(app)
@@ -13,9 +13,6 @@ client = TestClient(app)
 @pytest.fixture
 def setup_test_environment():
     # setup
-    sqlite_file_name = ":memory:"
-    sqlite_url = f"sqlite:///{sqlite_file_name}"
-    engine = create_engine(sqlite_url, echo=True)
     SQLModel.metadata.create_all(engine)
     session = Session(engine)
 

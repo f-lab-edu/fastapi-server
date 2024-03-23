@@ -48,6 +48,7 @@ access_token_expire_days: 1
 - .env 내용 예시
 ```
 PYTHONPATH=/Users/projects/fastapi-server
+TEST_DATABASE_URL="sqlite:///:memory:" pytest
 ```
 
 ### 2. 서버 실행 방법

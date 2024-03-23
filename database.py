@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from typing import List
 
@@ -37,6 +38,6 @@ class Relationship(SQLModel):
 
 
 sqlite_file_name = "post.db"
-sqlite_url = f"sqlite:///{sqlite_file_name}"
+sqlite_url = os.getenv("TEST_DATABASE_URL", "sqlite:///post.db")
 
 engine = create_engine(sqlite_url, echo=True)
