@@ -14,10 +14,8 @@ client = TestClient(app)
 def setup_test_environment():
     # setup
     sqlite_file_name = ":memory:"
-    sqlite_url = f"sqlite:///{sqlite_file_name}?cache=shared"
-    engine = create_engine(
-        sqlite_url, echo=True, connect_args={"check_same_thread": False}
-    )
+    sqlite_url = f"sqlite:///{sqlite_file_name}"
+    engine = create_engine(sqlite_url, echo=True)
     SQLModel.metadata.create_all(engine)
     session = Session(engine)
 
@@ -35,39 +33,15 @@ def setup_test_environment():
 
     # teardown
     session.close()
-    SQLModel.metadata.drop_all(engine)
-
-
-# @pytest.fixture
-# def setup_test_user(setup_test_environment):
-#     session = setup_test_environment
-
-#     hashed_password = password_hashing.hash("A1234567890")
-#     user = User(
-#         user_id="admin001", password=hashed_password, nickname="admin", role=UserRole.admin
-#     )
-
-#     session.add(user)
-#     session.commit()
-#     return user
 
 
 def test_fail404_login_user(setup_test_environment):
     session = setup_test_environment
-
     # given
-    hashed_password = password_hashing.hash("A1234567890")
-    user = User(
-        user_id="admin002",
-        password=hashed_password,
-        nickname="admin",
-        role=UserRole.admin,
-    )
-    session.add(user)
-    session.commit()
 
     # when : 회원정보에 없는 로그인 시도
-    login_data = {"user_id": "0000admin", "password": "1234567890"}
+    login = Login(user_id="admin001", password="1234567890")
+    login_data = login.dict()
     response = client.post("/api/users/login", json=login_data)
 
     # then
@@ -79,18 +53,10 @@ def test_fail401_login_user(setup_test_environment):
     session = setup_test_environment
 
     # given
-    hashed_password = password_hashing.hash("A1234567890")
-    user = User(
-        user_id="admin002",
-        password=hashed_password,
-        nickname="admin",
-        role=UserRole.admin,
-    )
-    session.add(user)
-    session.commit()
 
     # when : 틀린 비밀번호로 로그인 시도
-    login_data = {"user_id": "admin001", "password": "A123456789"}
+    login = Login(user_id="admin", password="A123456789")
+    login_data = login.dict()
     response = client.post("/api/users/login", json=login_data)
 
     # then
@@ -102,18 +68,10 @@ def test_success_login_user(setup_test_environment):
     session = setup_test_environment
 
     # given
-    hashed_password = password_hashing.hash("A1234567890")
-    user = User(
-        user_id="admin002",
-        password=hashed_password,
-        nickname="admin",
-        role=UserRole.admin,
-    )
-    session.add(user)
-    session.commit()
 
     # when : 로그인 성공
-    login_data = {"user_id": "admin002", "password": "A1234567890"}
+    login = Login(user_id="admin", password="A1234567890")
+    login_data = login.dict()
     response = client.post("/api/users/login", json=login_data)
 
     # then
