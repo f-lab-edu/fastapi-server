@@ -97,16 +97,10 @@ def test_success_logout_user(setup_test_environment):
     )
     add_token_to_memory(access_token)
 
-    login = Login(user_id="admin001", password="A1234567890")
-    login_data = login.dict()
-    login_response = client.post("/api/users/login", json=login_data)
-    token = login_response.json().get("access_token")
-    headers = {"Authorization": f"Bearer {token}"}
+    headers = {"Authorization": f"Bearer {access_token}"}
 
     # when : 로그아웃 성공
-    login = Login(user_id="admin001", password="A1234567890")
-    login_data = login.dict()
-    response = client.post("/api/users/logout", json=login_data, headers=headers)
+    response = client.post("/api/users/logout", headers=headers)
 
     # then
     assert response.status_code == 200
