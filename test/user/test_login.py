@@ -111,3 +111,4 @@ def test_success_logout_user(setup_test_environment):
 
     # then
     assert response.status_code == 200
+    assert is_token_in_memory(response.json().get("access_token")) == False
