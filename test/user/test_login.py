@@ -1,34 +1,28 @@
+from datetime import timedelta
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel
 
 from api.api_schema import Login, UserRole
-from common import password_hashing
+from api.user import add_token_to_memory
+from common import encode_access_token, password_hashing, settings
 from database import User, engine
 from main import app
 
 client = TestClient(app)
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def setup_test_environment():
     # setup
     SQLModel.metadata.create_all(engine)
     session = Session(engine)
 
-    hashed_password = password_hashing.hash("A1234567890")
-    user = User(
-        user_id="admin001",
-        password=hashed_password,
-        nickname="admin",
-        role=UserRole.admin,
-    )
-    session.add(user)
-    session.commit()
-
     yield session
 
     # teardown
+    SQLModel.metadata.drop_all(engine)
     session.close()
 
 
@@ -36,7 +30,7 @@ def test_fail404_login_user(setup_test_environment):
     session = setup_test_environment
     # given
 
-    # when : 회원정보에 없는 로그인 시도
+    # when
     login = Login(user_id="admin001", password="1234567890")
     login_data = login.dict()
     response = client.post("/api/users/login", json=login_data)
@@ -50,9 +44,18 @@ def test_fail401_login_user(setup_test_environment):
     session = setup_test_environment
 
     # given
+    hashed_password = password_hashing.hash("A1234567890")
+    user = User(
+        user_id="admin001",
+        password=hashed_password,
+        nickname="admin",
+        role=UserRole.admin,
+    )
+    session.add(user)
+    session.commit()
 
     # when : 틀린 비밀번호로 로그인 시도
-    login = Login(user_id="admin", password="A123456789")
+    login = Login(user_id="admin001", password="A123456789")
     login_data = login.dict()
     response = client.post("/api/users/login", json=login_data)
 
@@ -65,9 +68,18 @@ def test_success_login_user(setup_test_environment):
     session = setup_test_environment
 
     # given
+    hashed_password = password_hashing.hash("A1234567890")
+    user = User(
+        user_id="admin001",
+        password=hashed_password,
+        nickname="admin",
+        role=UserRole.admin,
+    )
+    session.add(user)
+    session.commit()
 
     # when : 로그인 성공
-    login = Login(user_id="admin", password="A1234567890")
+    login = Login(user_id="admin001", password="A1234567890")
     login_data = login.dict()
     response = client.post("/api/users/login", json=login_data)
 
@@ -79,14 +91,20 @@ def test_success_logout_user(setup_test_environment):
     session = setup_test_environment
 
     # given
-    login = Login(user_id="admin", password="A1234567890")
+    access_token_expires = timedelta(days=settings.access_token_expire_days)
+    access_token = encode_access_token(
+        data={"user_id": "admin001"}, expires_delta=access_token_expires
+    )
+    add_token_to_memory(access_token)
+
+    login = Login(user_id="admin001", password="A1234567890")
     login_data = login.dict()
     login_response = client.post("/api/users/login", json=login_data)
     token = login_response.json().get("access_token")
     headers = {"Authorization": f"Bearer {token}"}
 
     # when : 로그아웃 성공
-    login = Login(user_id="admin", password="A1234567890")
+    login = Login(user_id="admin001", password="A1234567890")
     login_data = login.dict()
     response = client.post("/api/users/logout", json=login_data, headers=headers)
 

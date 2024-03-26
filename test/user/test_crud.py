@@ -9,16 +9,16 @@ from main import app
 client = TestClient(app)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="function")
 def setup_test_environment():
     # 테스트 환경 설정
-    # os.environ["TEST_ENV"] = "True"
     SQLModel.metadata.create_all(engine)
     session = Session(engine)
 
     yield session
 
     # teardown
+    SQLModel.metadata.drop_all(engine)
     session.close()
 
 
@@ -34,4 +34,4 @@ def test_success_create_user(setup_test_environment):
 
     # then
     assert response.status_code == 201
-    assert response.json().get("detail") == "유저 생성 성공"
+    assert response.json().get("message") == "유저 생성 성공"

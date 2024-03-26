@@ -37,7 +37,6 @@ class Relationship(SQLModel):
     )
 
 
-sqlite_file_name = "post.db"
-sqlite_url = os.getenv("TEST_DATABASE_URL", "sqlite:///post.db")
+sqlite_url = os.getenv("DATABASE_URL", "sqlite:///:memory:")
 
 engine = create_engine(sqlite_url, echo=True)
