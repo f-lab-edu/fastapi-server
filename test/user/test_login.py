@@ -2,10 +2,10 @@ from datetime import timedelta
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session, SQLModel
+from sqlmodel import Session, SQLModel, select
 
 from api.api_schema import Login, UserRole
-from api.user import add_token_to_memory
+from api.user import add_token_to_memory, is_token_in_memory
 from common import encode_access_token, password_hashing, settings
 from database import User, engine
 from main import app
@@ -85,6 +85,13 @@ def test_success_login_user(setup_test_environment):
 
     # then
     assert response.status_code == 200
+    assert is_token_in_memory(response.json().get("access_token")) == True
+
+    # 데이터베이스에서 유저 조회
+    db_user = session.exec(
+        select(User).where(User.user_id == login_data.get("user_id"))
+    ).first()
+    assert db_user is not None  # 실제로 유저가 있는지 확인
 
 
 def test_success_logout_user(setup_test_environment):
