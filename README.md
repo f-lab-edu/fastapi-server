@@ -39,6 +39,17 @@ algorithm: HS256
 access_token_expire_days: 1
 ```
 
+#### (5). 환경 변수 파일 생성 : .env
+- .env 위치
+```
+/.env
+```
+
+- .env 내용 예시
+```
+DATABASE_URL="sqlite:///post.db"
+```
+
 ### 2. 서버 실행 방법
 ```uvicorn main:app --reload```
 
