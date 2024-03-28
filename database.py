@@ -37,6 +37,10 @@ class Relationship(SQLModel):
     )
 
 
-sqlite_url = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+sqlite_url = os.getenv("DATABASE_URL", "sqlite:///post.db")
+
+# 테스트 환경인지 확인하는 환경 변수를 추가합니다.
+if os.getenv("TEST_ENV") == "true":
+    sqlite_url = "sqlite:///test.db"
 
 engine = create_engine(sqlite_url, echo=True)

@@ -67,7 +67,7 @@ def test_success_login_user(setup_test_environment):
     # given
     hashed_password = password_hashing.hash("A1234567890")
     user = User(
-        user_id="admin001",
+        user_id="admin002",
         password=hashed_password,
         nickname="admin",
         role=UserRole.admin,
@@ -76,7 +76,7 @@ def test_success_login_user(setup_test_environment):
     session.commit()
 
     # when : 로그인 성공
-    login = Login(user_id="admin001", password="A1234567890")
+    login = Login(user_id="admin002", password="A1234567890")
     login_data = login.dict()
     response = client.post("/api/users/login", json=login_data)
 
