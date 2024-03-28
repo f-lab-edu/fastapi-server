@@ -23,28 +23,36 @@ from common import (
     settings,
     verify_password,
 )
-from database import Comment, Post, User, engine
+from database import AuthToken, Comment, Post, User, engine
 
 session = Session(engine)
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
-session_login = []
 
-
-def add_token_to_memory(token):
+def add_token_to_db(token: str) -> None:
     """인메모리 토큰 저장소에 토큰 추가"""
-    session_login.append(token)
+    auth_token = AuthToken(
+        token=token,
+    )
+    session.add(auth_token)
+    session.commit()
 
 
-def remove_token_from_memory(token):
+def remove_token_from_db(token: str) -> None:
     """인메모리 토큰 저장소에서 토큰 제거"""
-    session_login.remove(token)
+    auth_data = session.get(AuthToken, token)
+    session.delete(auth_data)
+    session.commit()
 
 
-def is_token_in_memory(token) -> bool:
+def is_token_in_db(token: str) -> bool:
     """토큰이 인메모리 저장소에 있는지 확인"""
-    return token in session_login
+    auth_data = session.get(AuthToken, token)
+    if auth_data != None:
+        return True
+    else:
+        return False
 
 
 @router.post(
@@ -250,7 +258,7 @@ def post_user_login(data: Login) -> ResponseAccessToken:
     access_token = encode_access_token(
         data={"user_id": data.user_id}, expires_delta=access_token_expires
     )
-    add_token_to_memory(access_token)
+    add_token_to_db(access_token)
     return ResponseAccessToken(access_token=access_token, token_type="bearer")
 
 
@@ -262,7 +270,7 @@ def post_user_logout(token: str = Depends(api_key_header)) -> ResponseMessageMod
     """
     유저 로그아웃
     """
-    if is_token_in_memory(token) != True:
+    if is_token_in_db(token) != True:
         return ResponseMessageModel(message="로그아웃 성공")
-    remove_token_from_memory(token)
+    remove_token_from_db(token)
     return ResponseMessageModel(message="로그아웃 성공")

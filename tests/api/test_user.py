@@ -5,9 +5,9 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, select
 
 from api.api_schema import Login, UserRole, UserSign
-from api.user import add_token_to_memory, is_token_in_memory
+from api.user import add_token_to_db, is_token_in_db
 from common import encode_access_token, password_hashing, settings
-from database import User, engine
+from database import AuthToken, User, engine
 from main import app
 
 client = TestClient(app)
@@ -79,10 +79,11 @@ def test_success_login_user(setup_test_environment):
     login = Login(user_id="admin002", password="A1234567890")
     login_data = login.dict()
     response = client.post("/api/users/login", json=login_data)
+    res_data = response.json()
 
     # then
     assert response.status_code == 200
-    assert is_token_in_memory(response.json().get("access_token")) == True
+    assert is_token_in_db(res_data["access_token"]) == True
 
     # 데이터베이스에서 유저 조회
     db_user = session.exec(
@@ -97,16 +98,17 @@ def test_success_logout_user():
     access_token = encode_access_token(
         data={"user_id": "admin001"}, expires_delta=access_token_expires
     )
-    add_token_to_memory(access_token)
+    add_token_to_db(access_token)
 
     headers = {"Authorization": f"Bearer {access_token}"}
 
     # when : 로그아웃 성공
     response = client.post("/api/users/logout", headers=headers)
+    res_data = response.json()
 
     # then
     assert response.status_code == 200
-    assert is_token_in_memory(response.json().get("access_token")) == False
+    assert is_token_in_db(res_data["access_token"]) == False
 
 
 def test_success_create_user(setup_test_environment):
