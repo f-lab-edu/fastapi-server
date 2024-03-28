@@ -47,7 +47,6 @@ access_token_expire_days: 1
 
 - .env 내용 예시
 ```
-PYTHONPATH=/Users/projects/fastapi-server
 DATABASE_URL="sqlite:///post.db"
 ```
 
