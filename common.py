@@ -33,6 +33,7 @@ def encode_access_token(data: dict, expires_delta: timedelta) -> str:
 
 
 def verify_password(plain_password, hashed_password) -> bool:
+    password_hashing = CryptContext(schemes=["bcrypt"], deprecated="auto")
     return password_hashing.verify(plain_password, hashed_password)
 
 
