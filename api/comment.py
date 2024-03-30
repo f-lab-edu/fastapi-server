@@ -92,7 +92,7 @@ def delete_comment(
         )
     token_user_id = decode_access_token(token)
     user_content = session.get(User, token_user_id.get("user_id"))
-    if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
+    if user_content.role != "admin" and token_user_id.get("user_id") != data.author_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="유저 아이디가 다릅니다.",

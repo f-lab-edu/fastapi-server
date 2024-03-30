@@ -223,10 +223,12 @@ def test_success_get_user_posts(setup_test_environment):
     session.commit()
 
     # when
-    response = client.get("/api/users/admin04/posts/1", headers=headers)
+    response = client.get("/api/users/admin04/posts/?page=1", headers=headers)
+    res_data = response.json()
 
     # then
     assert response.status_code == 200
+    assert res_data["message"] == "유저별 작성 게시글 목록 조회 성공"
 
 
 def test_success_get_user_comments(setup_test_environment):
@@ -256,7 +258,9 @@ def test_success_get_user_comments(setup_test_environment):
     session.commit()
 
     # when
-    response = client.get("/api/users/admin001/comments/1", headers=headers)
+    response = client.get("/api/users/admin05/comments/?page=1", headers=headers)
+    res_data = response.json()
 
     # then
     assert response.status_code == 200
+    assert res_data["message"] == "유저별 작성 댓글 조회 성공"
