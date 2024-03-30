@@ -7,7 +7,7 @@ from sqlmodel import Field, Relationship, SQLModel, create_engine
 
 class AuthToken(SQLModel, table=True):
     __tablename__ = "auth_token"
-    idx: int = Field(default=None, primary_key=True)
+    idx: int = Field(primary_key=True)
     token: str
 
 

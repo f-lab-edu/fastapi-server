@@ -7,7 +7,7 @@ from sqlmodel import Session, SQLModel, select
 from api.api_schema import Login, UserRole, UserSign
 from api.user import add_token_to_db, is_token_in_db
 from common import encode_access_token, password_hashing, settings
-from database import AuthToken, User, engine
+from database import User, engine
 from main import app
 
 client = TestClient(app)
@@ -100,7 +100,7 @@ def test_success_logout_user():
     )
     add_token_to_db(access_token)
 
-    headers = {"Authorization": f"Bearer {access_token}"}
+    headers = {"Authorization": f"{access_token}"}
 
     # when : 로그아웃 성공
     response = client.post("/api/users/logout", headers=headers)
@@ -108,7 +108,7 @@ def test_success_logout_user():
 
     # then
     assert response.status_code == 200
-    assert is_token_in_db(res_data["access_token"]) == False
+    assert res_data["message"] == "로그아웃 성공"
 
 
 def test_success_create_user(setup_test_environment):

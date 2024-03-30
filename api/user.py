@@ -31,7 +31,7 @@ router = APIRouter(prefix="/api/users", tags=["users"])
 
 
 def add_token_to_db(token: str) -> None:
-    """인메모리 토큰 저장소에 토큰 추가"""
+    """db 토큰 저장소에 토큰 추가"""
     auth_token = AuthToken(
         token=token,
     )
@@ -40,16 +40,17 @@ def add_token_to_db(token: str) -> None:
 
 
 def remove_token_from_db(token: str) -> None:
-    """인메모리 토큰 저장소에서 토큰 제거"""
-    auth_data = session.get(AuthToken, token)
-    session.delete(auth_data)
-    session.commit()
+    """db 토큰 저장소에서 토큰 제거"""
+    auth_token = session.exec(select(AuthToken).where(AuthToken.token == token)).first()
+    if auth_token is not None:
+        session.delete(auth_token)
+        session.commit()
 
 
 def is_token_in_db(token: str) -> bool:
-    """토큰이 인메모리 저장소에 있는지 확인"""
-    auth_data = session.get(AuthToken, token)
-    if auth_data != None:
+    """토큰이 db에 있는지 확인"""
+    auth_token = session.exec(select(AuthToken).where(AuthToken.token == token)).first()
+    if auth_token is not None:
         return True
     else:
         return False
