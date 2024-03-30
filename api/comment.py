@@ -8,7 +8,7 @@ from api.api_schema import (
     ResponseMessageModel,
 )
 from common import api_key_header, decode_access_token
-from database import Comment, User, engine
+from database import Comment, Post, User, engine
 
 session = Session(engine)
 
@@ -24,6 +24,12 @@ def create_comment(data: CommentBody) -> ResponseMessageModel:
     """
     댓글 생성
     """
+    post_id = session.get(Post, data.post_id)
+    if post_id == None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="게시물이 존재하지 않습니다.",
+        )
     data = Comment(author_id=data.author_id, post_id=data.post_id, content=data.content)
     session.add(data)
     session.commit()

@@ -7,7 +7,7 @@ from sqlmodel import Session, SQLModel, select
 from api.api_schema import Login, UserBody, UserRole, UserSign
 from api.user import add_token_to_db, is_token_in_db
 from common import encode_access_token, password_hashing, settings, verify_password
-from database import User, engine
+from database import Comment, Post, User, engine
 from main import app
 
 client = TestClient(app)
@@ -22,7 +22,7 @@ def setup_test_environment():
     yield session
 
     # teardown
-    SQLModel.metadata.drop_all(engine)
+    # SQLModel.metadata.drop_all(engine)
     session.close()
 
 
@@ -99,7 +99,6 @@ def test_success_logout_user():
         data={"user_id": "admin001"}, expires_delta=access_token_expires
     )
     add_token_to_db(access_token)
-
     headers = {"Authorization": f"{access_token}"}
 
     # when : 로그아웃 성공
@@ -142,7 +141,7 @@ def test_success_edit_user(setup_test_environment):
     # given
     hashed_password = password_hashing.hash("A1234567890")
     user = User(
-        user_id="admin001",
+        user_id="admin02",
         password=hashed_password,
         nickname="admin",
         role=UserRole.admin,
@@ -151,7 +150,7 @@ def test_success_edit_user(setup_test_environment):
     session.commit()
     access_token_expires = timedelta(days=settings.access_token_expire_days)
     access_token = encode_access_token(
-        data={"user_id": "admin001"}, expires_delta=access_token_expires
+        data={"user_id": "admin02"}, expires_delta=access_token_expires
     )
     add_token_to_db(access_token)
     headers = {"Authorization": f"{access_token}"}
@@ -159,14 +158,14 @@ def test_success_edit_user(setup_test_environment):
     # when
     user_edit_data = UserBody(nickname="editadmin", password="1234567890A")
     response = client.put(
-        "/api/users/admin001", json=user_edit_data.dict(), headers=headers
+        "/api/users/admin02", json=user_edit_data.dict(), headers=headers
     )
     res_data = response.json()
 
     # then
     assert response.status_code == 200
-    assert res_data["message"] == "유저 아이디 admin001 수정 성공"
-    assert res_data["data"]["user_id"] == "admin001"
+    assert res_data["message"] == "유저 아이디 admin02 수정 성공"
+    assert res_data["data"]["user_id"] == "admin02"
     assert verify_password("1234567890A", res_data["data"]["password"]) == True
     assert res_data["data"]["nickname"] == "editadmin"
 
@@ -177,7 +176,7 @@ def test_success_delete_user(setup_test_environment):
     # given
     hashed_password = password_hashing.hash("A1234567890")
     user = User(
-        user_id="admin001",
+        user_id="admin03",
         password=hashed_password,
         nickname="admin",
         role=UserRole.admin,
@@ -186,27 +185,78 @@ def test_success_delete_user(setup_test_environment):
     session.commit()
     access_token_expires = timedelta(days=settings.access_token_expire_days)
     access_token = encode_access_token(
-        data={"user_id": "admin001"}, expires_delta=access_token_expires
+        data={"user_id": "admin03"}, expires_delta=access_token_expires
     )
     add_token_to_db(access_token)
     headers = {"Authorization": f"{access_token}"}
 
     # when
+    response = client.delete("/api/users/admin03", headers=headers)
+    res_data = response.json()
 
     # then
+    assert response.status_code == 200
+    assert res_data["message"] == "유저 아이디 admin03 삭제 성공"
 
 
 def test_success_get_user_posts(setup_test_environment):
     session = setup_test_environment
 
     # given
+    hashed_password = password_hashing.hash("A1234567890")
+    user = User(
+        user_id="admin04",
+        password=hashed_password,
+        nickname="admin",
+        role=UserRole.admin,
+    )
+    session.add(user)
+    session.commit()
+    access_token_expires = timedelta(days=settings.access_token_expire_days)
+    access_token = encode_access_token(
+        data={"user_id": "admin04"}, expires_delta=access_token_expires
+    )
+    add_token_to_db(access_token)
+    headers = {"Authorization": f"{access_token}"}
+    post = Post(author="admin04", title="테스트 제목", content="테스트 내용")
+    session.add(post)
+    session.commit()
+
     # when
+    response = client.get("/api/users/admin04/posts/1", headers=headers)
+
     # then
+    assert response.status_code == 200
 
 
 def test_success_get_user_comments(setup_test_environment):
     session = setup_test_environment
 
     # given
+    hashed_password = password_hashing.hash("A1234567890")
+    user = User(
+        user_id="admin05",
+        password=hashed_password,
+        nickname="admin",
+        role=UserRole.admin,
+    )
+    session.add(user)
+    session.commit()
+    access_token_expires = timedelta(days=settings.access_token_expire_days)
+    access_token = encode_access_token(
+        data={"user_id": "admin05"}, expires_delta=access_token_expires
+    )
+    add_token_to_db(access_token)
+    headers = {"Authorization": f"{access_token}"}
+    post = Post(author="admin05", title="테스트 제목", content="테스트 내용")
+    session.add(post)
+    session.commit()
+    data = Comment(author_id="admin05", post_id=2, content="댓글 내용")
+    session.add(data)
+    session.commit()
+
     # when
+    response = client.get("/api/users/admin001/comments/1", headers=headers)
+
     # then
+    assert response.status_code == 200
