@@ -24,3 +24,9 @@ repos:
       entry: poetry run isort
       language: system
       types: [file, python]
+    - id: pytest-cov
+      name: pytest with coverage
+      entry: pytest --cov=tests --cov-report=html --cov-fail-under=80
+      language: system
+      types: [python]
+      stages: [commit]
