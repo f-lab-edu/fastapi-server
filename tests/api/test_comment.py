@@ -5,8 +5,8 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel
 
 from api.api_schema import CommentBody, CommentConent, UserRole
-from api.user import add_token_to_db, is_token_in_db
-from common import encode_access_token, password_hashing, settings, verify_password
+from api.user import add_token_to_db
+from common import encode_access_token, password_hashing, settings
 from database import Comment, Post, User, engine
 from main import app
 
@@ -22,8 +22,12 @@ def setup_test_environment():
     yield session
 
     # teardown
-    # SQLModel.metadata.drop_all(engine)
     session.close()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def teardown_test_environment():
+    SQLModel.metadata.drop_all(engine)
 
 
 def test_success_create_comment(setup_test_environment):

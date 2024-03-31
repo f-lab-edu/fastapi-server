@@ -22,7 +22,6 @@ def setup_test_environment():
     yield session
 
     # teardown
-    # SQLModel.metadata.drop_all(engine)
     session.close()
 
 
