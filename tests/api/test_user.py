@@ -13,16 +13,22 @@ from main import app
 client = TestClient(app)
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def setup_test_environment():
     # setup
     SQLModel.metadata.create_all(engine)
-    session = Session(engine)
 
-    yield session
+    yield
 
     # teardown
-    session.close()
+    SQLModel.metadata.drop_all(engine)
+
+
+@pytest.fixture(scope="function")
+def db_session():
+    with Session(engine) as session:
+        yield session
+        session.rollback()
 
 
 def test_fail404_sign_in_user():
@@ -36,8 +42,8 @@ def test_fail404_sign_in_user():
     assert res_data["detail"] == "유저 아이디가 존재하지 않습니다."
 
 
-def test_fail401_sign_in_user(setup_test_environment):
-    session = setup_test_environment
+def test_fail401_sign_in_user(db_session):
+    session = db_session
 
     # given
     hashed_password = password_hashing.hash("A1234567890")
@@ -60,8 +66,8 @@ def test_fail401_sign_in_user(setup_test_environment):
     assert res_data["detail"] == "아이디 혹은 비밀번호가 맞지 않습니다."
 
 
-def test_success_sign_in_user(setup_test_environment):
-    session = setup_test_environment
+def test_success_sign_in_user(db_session):
+    session = db_session
 
     # given
     hashed_password = password_hashing.hash("A1234567890")
@@ -109,8 +115,8 @@ def test_success_logout_user():
     assert res_data["message"] == "로그아웃 성공"
 
 
-def test_success_create_user(setup_test_environment):
-    session = setup_test_environment
+def test_success_create_user(db_session):
+    session = db_session
 
     # when : 유저 생성 성공
     user_sign = UserSign(user_id="admin01", password="A1234567890", nickname="admin")
@@ -134,8 +140,8 @@ def test_success_create_user(setup_test_environment):
     )  # 생성된 유저의 닉네임이 기대하는 값과 일치하는지 확인
 
 
-def test_success_edit_user(setup_test_environment):
-    session = setup_test_environment
+def test_success_edit_user(db_session):
+    session = db_session
 
     # given
     hashed_password = password_hashing.hash("A1234567890")
@@ -169,8 +175,8 @@ def test_success_edit_user(setup_test_environment):
     assert res_data["data"]["nickname"] == "editadmin"
 
 
-def test_success_delete_user(setup_test_environment):
-    session = setup_test_environment
+def test_success_delete_user(db_session):
+    session = db_session
 
     # given
     hashed_password = password_hashing.hash("A1234567890")
@@ -198,8 +204,8 @@ def test_success_delete_user(setup_test_environment):
     assert res_data["message"] == "유저 아이디 admin03 삭제 성공"
 
 
-def test_success_get_user_posts(setup_test_environment):
-    session = setup_test_environment
+def test_success_get_user_posts(db_session):
+    session = db_session
 
     # given
     hashed_password = password_hashing.hash("A1234567890")
@@ -230,8 +236,8 @@ def test_success_get_user_posts(setup_test_environment):
     assert res_data["message"] == "유저별 작성 게시글 목록 조회 성공"
 
 
-def test_success_get_user_comments(setup_test_environment):
-    session = setup_test_environment
+def test_success_get_user_comments(db_session):
+    session = db_session
 
     # given
     hashed_password = password_hashing.hash("A1234567890")

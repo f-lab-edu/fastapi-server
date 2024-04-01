@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session, SQLModel
+from sqlmodel import Session, SQLModel, select
 
 from api.api_schema import CommentBody, CommentConent, UserRole
 from api.user import add_token_to_db
@@ -13,25 +13,26 @@ from main import app
 client = TestClient(app)
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def setup_test_environment():
     # setup
     SQLModel.metadata.create_all(engine)
-    session = Session(engine)
 
-    yield session
+    yield
 
     # teardown
-    session.close()
-
-
-@pytest.fixture(scope="session", autouse=True)
-def teardown_test_environment():
     SQLModel.metadata.drop_all(engine)
 
 
-def test_success_create_comment(setup_test_environment):
-    session = setup_test_environment
+@pytest.fixture(scope="function")
+def db_session():
+    with Session(engine) as session:
+        yield session
+        session.rollback()
+
+
+def test_success_create_comment(db_session):
+    session = db_session
 
     # given
     hashed_password = password_hashing.hash("A1234567890")
@@ -50,7 +51,7 @@ def test_success_create_comment(setup_test_environment):
     add_token_to_db(access_token)
     headers = {"Authorization": f"{access_token}"}
 
-    post = Post(author="admin011", title="게시물 제목 작성", content="게시물 내용")
+    post = Post(author="admin011", title="게시물 제목", content="게시물 내용")
     session.add(post)
     session.commit()
 
@@ -61,10 +62,23 @@ def test_success_create_comment(setup_test_environment):
 
     # then
     assert response.status_code == 201
+    assert res_data["message"] == "댓글 생성 성공"
+
+    db_user = session.exec(select(User).where(User.user_id == "admin011")).first()
+    db_post = session.exec(select(Post).where(Post.post_id == 1)).first()
+    db_comment = session.exec(select(Comment).where(Comment.com_id == 1)).first()
+    assert db_user is not None  # 실제로 유저가 있는지 확인
+    assert db_user.user_id == "admin011"
+    assert db_post.post_id == 1
+    assert db_post.title == "게시물 제목"
+    assert db_post.content == "게시물 내용"
+    assert db_comment.post_id == 1
+    assert db_comment.author_id == "admin011"
+    assert db_comment.content == "댓글 생성"
 
 
-def test_success_edit_comment(setup_test_environment):
-    session = setup_test_environment
+def test_success_edit_comment(db_session):
+    session = db_session
 
     # given
     hashed_password = password_hashing.hash("A1234567890")
@@ -83,7 +97,7 @@ def test_success_edit_comment(setup_test_environment):
     add_token_to_db(access_token)
     headers = {"Authorization": f"{access_token}"}
 
-    post = Post(author="admin022", title="게시물 제목 작성", content="게시물 내용")
+    post = Post(author="admin022", title="게시물 제목", content="게시물 내용")
     session.add(post)
     session.commit()
 
@@ -102,8 +116,8 @@ def test_success_edit_comment(setup_test_environment):
     assert response.status_code == 200
 
 
-def test_success_delete_comment(setup_test_environment):
-    session = setup_test_environment
+def test_success_delete_comment(db_session):
+    session = db_session
 
     # given
     hashed_password = password_hashing.hash("A1234567890")
@@ -122,7 +136,7 @@ def test_success_delete_comment(setup_test_environment):
     add_token_to_db(access_token)
     headers = {"Authorization": f"{access_token}"}
 
-    post = Post(author="admin033", title="게시물 제목 작성", content="게시물 내용")
+    post = Post(author="admin033", title="게시물 제목", content="게시물 내용")
     session.add(post)
     session.commit()
 
