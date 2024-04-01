@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Union
 
 import yaml
@@ -24,7 +24,7 @@ settings = Settings(
 
 def encode_access_token(data: dict, expires_delta: timedelta) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + expires_delta
+    expire = datetime.now(timezone.utc) + expires_delta
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
         to_encode, settings.secret_key, algorithm=settings.algorithm
@@ -33,6 +33,7 @@ def encode_access_token(data: dict, expires_delta: timedelta) -> str:
 
 
 def verify_password(plain_password, hashed_password) -> bool:
+    password_hashing = CryptContext(schemes=["bcrypt"], deprecated="auto")
     return password_hashing.verify(plain_password, hashed_password)
 
 

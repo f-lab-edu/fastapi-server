@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 
@@ -127,11 +129,11 @@ def edit_post(
     return ResponseModel(
         message=f"게시글 번호 {post_id} 수정 성공",
         data=Content(
-            post_id=data.post_id,
+            post_id=post_id,
             author=data.author,
             title=data.title,
             content=data.content,
-            created_at=data.created_at,
+            created_at=datetime.now(timezone.utc),
         ),
     )
 

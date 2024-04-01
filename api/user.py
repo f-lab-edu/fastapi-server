@@ -23,13 +23,37 @@ from common import (
     settings,
     verify_password,
 )
-from database import Comment, Post, User, engine
+from database import AuthToken, Comment, Post, User, engine
 
 session = Session(engine)
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
-session_login = []
+
+def add_token_to_db(token: str) -> None:
+    """db 토큰 저장소에 토큰 추가"""
+    auth_token = AuthToken(
+        token=token,
+    )
+    session.add(auth_token)
+    session.commit()
+
+
+def remove_token_from_db(token: str) -> None:
+    """db 토큰 저장소에서 토큰 제거"""
+    auth_token = session.exec(select(AuthToken).where(AuthToken.token == token)).first()
+    if auth_token is not None:
+        session.delete(auth_token)
+        session.commit()
+
+
+def is_token_in_db(token: str) -> bool:
+    """토큰이 db에 있는지 확인"""
+    auth_token = session.exec(select(AuthToken).where(AuthToken.token == token)).first()
+    if auth_token is not None:
+        return True
+    else:
+        return False
 
 
 @router.post(
@@ -132,7 +156,7 @@ def delete_user(
         )
     token_user_id = decode_access_token(token)
     user_content = session.get(User, token_user_id.get("user_id"))
-    if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
+    if user_content.role != "admin" and token_user_id.get("user_id") != data.user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="유저 아이디가 다릅니다.",
@@ -155,7 +179,10 @@ def get_user_posts(
     """
     token_user_id = decode_access_token(token)
     user_content = session.get(User, token_user_id.get("user_id"))
-    if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
+    if (
+        user_content.role != "admin"
+        and token_user_id.get("user_id") != user_content.user_id
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="유저 아이디가 다릅니다.",
@@ -190,7 +217,10 @@ def get_user_comments(
     """
     token_user_id = decode_access_token(token)
     user_content = session.get(User, token_user_id.get("user_id"))
-    if user_content.role != "admin" and token_user_id.get("user_id") != data.author:
+    if (
+        user_content.role != "admin"
+        and token_user_id.get("user_id") != user_content.user_id
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="유저 아이디가 다릅니다.",
@@ -235,7 +265,7 @@ def post_user_login(data: Login) -> ResponseAccessToken:
     access_token = encode_access_token(
         data={"user_id": data.user_id}, expires_delta=access_token_expires
     )
-    session_login.append(access_token)
+    add_token_to_db(access_token)
     return ResponseAccessToken(access_token=access_token, token_type="bearer")
 
 
@@ -247,8 +277,7 @@ def post_user_logout(token: str = Depends(api_key_header)) -> ResponseMessageMod
     """
     유저 로그아웃
     """
-    if token not in session_login:
+    if is_token_in_db(token) != True:
         return ResponseMessageModel(message="로그아웃 성공")
-    token_idx = session_login.index(token)
-    session_login.pop(token_idx)
+    remove_token_from_db(token)
     return ResponseMessageModel(message="로그아웃 성공")
