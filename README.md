@@ -60,6 +60,9 @@ DATABASE_URL="sqlite:///post.db"
 #### (2). poetry 가상환경 종료
 ```exit```
 
+## docker image 링크
+https://hub.docker.com/r/8bitcrab/fastapi-server
+
 ## API 사용 방법 및 결과 예시
 ### 게시글 전체 목록 조회 API
 - 사용 예시
