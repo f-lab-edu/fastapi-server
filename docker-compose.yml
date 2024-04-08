@@ -22,4 +22,4 @@ services:
       - MYSQL_PASSWORD=1q2w3e4r
     restart: always
     volumes:
-      - "/var/lib/mysql"
+      - ./data:/var/lib/mysql
