@@ -1,0 +1,25 @@
+# 파일 규격 버전
+version: '3.8'
+
+# 실행하려는 컨테이너
+services:
+  fastapi_server:
+    build: .
+    image: python:3.12.0
+    ports:
+      - "8000:8000"
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    env_file:
+      - .env
+    environment:
+      - MYSQL_ROOT_PASSWORD=admin1234
+      - MYSQL_DATABASE=post
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=1q2w3e4r
+    restart: always
+    volumes:
+      - "/var/lib/mysql"

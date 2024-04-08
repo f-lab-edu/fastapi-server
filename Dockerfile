@@ -7,6 +7,7 @@ WORKDIR /fastapi_server
 
 # 환경변수 설정
 ENV PYTHONDONTWRITEBYTECODE 1
+# 파이썬 출력 로그 설정
 ENV PYTHONUNBUFFERED 1
 
 # 시스템 의존성 설치
