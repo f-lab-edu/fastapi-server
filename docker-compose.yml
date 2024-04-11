@@ -5,9 +5,10 @@ version: '3.8'
 services:
   fastapi_server:
     build: .
-    image: python:3.12.0
     ports:
       - "8000:8000"
+    depends_on:
+      - db
 
   db:
     image: mysql:8.0
@@ -16,10 +17,15 @@ services:
     env_file:
       - .env
     environment:
-      - MYSQL_ROOT_PASSWORD=admin1234
-      - MYSQL_DATABASE=post
+      - MYSQL_DATABASE=postdb
       - MYSQL_USER=user
       - MYSQL_PASSWORD=1q2w3e4r
+      - MYSQL_ROOT_PASSWORD=admin1234
     restart: always
+    # 데이터 볼륨 설정
     volumes:
       - ./data:/var/lib/mysql
+
+# 데이터 볼륨 정의
+volumes:
+  data:
