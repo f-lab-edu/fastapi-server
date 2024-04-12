@@ -1,0 +1,31 @@
+# 파일 규격 버전
+version: '3.8'
+
+# 실행하려는 컨테이너
+services:
+  fastapi_server:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    env_file:
+      - .env
+    environment:
+      - MYSQL_DATABASE=postdb
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=1q2w3e4r
+      - MYSQL_ROOT_PASSWORD=admin1234
+    restart: always
+    # 데이터 볼륨 설정
+    volumes:
+      - ./data:/var/lib/mysql
+
+# 데이터 볼륨 정의
+volumes:
+  data:

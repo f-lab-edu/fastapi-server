@@ -47,7 +47,7 @@ access_token_expire_days: 1
 
 - .env 내용 예시
 ```
-DATABASE_URL="sqlite:///post.db"
+DATABASE_URL="mysql://user:1q2w3e4r@db/postdb"
 ```
 
 ### 2. 서버 실행 방법

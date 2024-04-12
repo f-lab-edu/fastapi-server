@@ -4,6 +4,7 @@
 ## 추가 ##
 *.db
 config.yaml
+data/
 
 ### macOS ###
 # General
