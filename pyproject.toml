@@ -29,6 +29,7 @@ isort = "^5.13.2"
 pytest = "^8.1.1"
 pytest-cov = "^4.1.0"
 httpx = "^0.27.0"
+locust = "^2.25.0"
 
 [build-system]
 requires = ["poetry-core"]
