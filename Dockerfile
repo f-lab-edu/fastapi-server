@@ -1,4 +1,3 @@
-# Dockerfile
 # 기본 이미지로 Python 3.12.0 이미지를 사용
 FROM python:3.12-slim as builder
 
@@ -15,18 +14,17 @@ RUN apt-get update \
 RUN pip install poetry
 RUN poetry config virtualenvs.create false
 
-# 프로젝트 의존성 설치
-RUN poetry install --no-dev
-RUN poetry shell
-
 # 작업 디렉토리 설정
 WORKDIR /fastapi_server
 
 # 프로젝트 의존성 파일 복사
 COPY pyproject.toml poetry.lock ./
 
+# 프로젝트 의존성 설치
+RUN poetry install --no-dev
+
 # 애플리케이션 코드를 이미지에 복사
-COPY . /fastapi_server
+COPY . .
 
 EXPOSE 8000
 ENTRYPOINT ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
