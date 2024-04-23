@@ -1,7 +1,9 @@
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import sessionmaker
+from sqlmodel import select
 
 from api.api_schema import (
     CommentContent,
@@ -25,31 +27,35 @@ from common import (
 )
 from database import AuthToken, Comment, Post, User, engine
 
-session = Session(engine)
+session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
 
-def add_token_to_db(token: str) -> None:
+async def add_token_to_db(token: str) -> None:
     """db 토큰 저장소에 토큰 추가"""
     auth_token = AuthToken(
         token=token,
     )
     session.add(auth_token)
-    session.commit()
+    await session.commit()
 
 
-def remove_token_from_db(token: str) -> None:
+async def remove_token_from_db(token: str) -> None:
     """db 토큰 저장소에서 토큰 제거"""
-    auth_token = session.exec(select(AuthToken).where(AuthToken.token == token)).first()
+    auth_token = await session.exec(
+        select(AuthToken).where(AuthToken.token == token)
+    ).first()
     if auth_token is not None:
         session.delete(auth_token)
         session.commit()
 
 
-def is_token_in_db(token: str) -> bool:
+async def is_token_in_db(token: str) -> bool:
     """토큰이 db에 있는지 확인"""
-    auth_token = session.exec(select(AuthToken).where(AuthToken.token == token)).first()
+    auth_token = await session.exec(
+        select(AuthToken).where(AuthToken.token == token)
+    ).first()
     if auth_token is not None:
         return True
     else:
@@ -61,7 +67,7 @@ def is_token_in_db(token: str) -> bool:
     response_model=ResponseMessageModel,
     status_code=status.HTTP_201_CREATED,
 )
-def create_user(data: UserSign) -> ResponseMessageModel:
+async def create_user(data: UserSign) -> ResponseMessageModel:
     """
     유저 생성
     """
@@ -93,7 +99,7 @@ def create_user(data: UserSign) -> ResponseMessageModel:
     response_model=ResponseUser,
     status_code=status.HTTP_200_OK,
 )
-def edit_user(
+async def edit_user(
     user_id: str, data: UserBody, token: str = Depends(api_key_header)
 ) -> ResponseUser:
     """
@@ -142,27 +148,27 @@ def edit_user(
     response_model=ResponseMessageModel,
     status_code=status.HTTP_200_OK,
 )
-def delete_user(
+async def delete_user(
     user_id: str, token: str = Depends(api_key_header)
 ) -> ResponseMessageModel:
     """
     유저 삭제
     """
-    data = session.get(User, user_id)
+    data = await session.get(User, user_id)
     if data == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="유저 삭제 실패. 유저 아이디가 존재하지 않습니다.",
         )
     token_user_id = decode_access_token(token)
-    user_content = session.get(User, token_user_id.get("user_id"))
+    user_content = await session.get(User, token_user_id.get("user_id"))
     if user_content.role != "admin" and token_user_id.get("user_id") != data.user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="유저 아이디가 다릅니다.",
         )
     session.delete(data)
-    session.commit()
+    await session.commit()
     return ResponseMessageModel(message=f"유저 아이디 {user_id} 삭제 성공")
 
 
@@ -171,14 +177,14 @@ def delete_user(
     response_model=ResponseListModel,
     status_code=status.HTTP_200_OK,
 )
-def get_user_posts(
+async def get_user_posts(
     user_id: str, page: int = 1, token: str = Depends(api_key_header)
 ) -> ResponseListModel:
     """
     유저별로 작성한 게시글 목록 조회
     """
     token_user_id = decode_access_token(token)
-    user_content = session.get(User, token_user_id.get("user_id"))
+    user_content = await session.get(User, token_user_id.get("user_id"))
     if (
         user_content.role != "admin"
         and token_user_id.get("user_id") != user_content.user_id
@@ -189,7 +195,7 @@ def get_user_posts(
         )
     data = []
     offset = (page - 1) * 100
-    results = session.exec(
+    results = await session.exec(
         select(Post).where(Post.author == user_id).offset(offset).limit(100)
     ).all()
     for res in results:
@@ -209,14 +215,14 @@ def get_user_posts(
     response_model=ResponseComList,
     status_code=status.HTTP_200_OK,
 )
-def get_user_comments(
+async def get_user_comments(
     user_id: str, page: int = 1, token: str = Depends(api_key_header)
 ) -> ResponseComList:
     """
     유저별로 작성한 댓글 목록 조회
     """
     token_user_id = decode_access_token(token)
-    user_content = session.get(User, token_user_id.get("user_id"))
+    user_content = await session.get(User, token_user_id.get("user_id"))
     if (
         user_content.role != "admin"
         and token_user_id.get("user_id") != user_content.user_id
@@ -227,7 +233,7 @@ def get_user_comments(
         )
     data = []
     offset = (page - 1) * 100
-    results = session.exec(
+    results = await session.exec(
         select(Comment).where(Comment.author_id == user_id).offset(offset).limit(100)
     ).all()
     for res in results:
@@ -246,11 +252,11 @@ def get_user_comments(
     "/login",
     status_code=status.HTTP_200_OK,
 )
-def post_user_login(data: Login) -> ResponseAccessToken:
+async def post_user_login(data: Login) -> ResponseAccessToken:
     """
     유저 로그인
     """
-    db_data = session.get(User, data.user_id)
+    db_data = await session.get(User, data.user_id)
     if db_data == None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -273,7 +279,9 @@ def post_user_login(data: Login) -> ResponseAccessToken:
     "/logout",
     status_code=status.HTTP_200_OK,
 )
-def post_user_logout(token: str = Depends(api_key_header)) -> ResponseMessageModel:
+async def post_user_logout(
+    token: str = Depends(api_key_header),
+) -> ResponseMessageModel:
     """
     유저 로그아웃
     """

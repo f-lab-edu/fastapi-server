@@ -2,7 +2,8 @@ import os
 from datetime import datetime, timezone
 from typing import List
 
-from sqlmodel import Field, Relationship, SQLModel, create_engine
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlmodel import Field, Relationship, SQLModel
 
 
 class AuthToken(SQLModel, table=True):
@@ -49,10 +50,10 @@ class Relationship(SQLModel):
     )
 
 
-sqlite_url = os.getenv("DATABASE_URL", "sqlite:///post.db")
+sqlite_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///post.db")
 
 # 테스트 환경인지 확인하는 환경 변수를 추가합니다.
 if os.getenv("TEST_ENV") == "true":
-    sqlite_url = "sqlite:///test.db"
+    sqlite_url = "sqlite+aiosqlite:///test.db"
 
-engine = create_engine(sqlite_url, echo=True)
+engine = create_async_engine(sqlite_url, echo=True)
