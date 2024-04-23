@@ -57,7 +57,8 @@ sqlite_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///post.db")
 if os.getenv("TEST_ENV") == "true":
     sqlite_url = "sqlite+aiosqlite:///test.db"
 
-engine = create_async_engine(sqlite_url, echo=True, pool_size=10, max_overflow=20)
+# engine = create_async_engine(sqlite_url, echo=True, pool_size=10, max_overflow=20)
+engine = create_async_engine(sqlite_url, echo=True)
 
 cache_region = make_region().configure(
     "dogpile.cache.redis",
