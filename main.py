@@ -9,7 +9,7 @@ app = FastAPI()
 
 
 @app.get("/", response_class=RedirectResponse)
-def index():
+async def index():
     return "/docs"
 
 
