@@ -58,32 +58,3 @@ if os.getenv("TEST_ENV") == "true":
     sqlite_url = "sqlite+aiosqlite:///test.db"
 
 engine = create_async_engine(sqlite_url, echo=True, pool_size=10, max_overflow=20)
-
-cache_region = make_region().configure(
-    "dogpile.cache.redis",
-    arguments={
-        "host": "localhost",  # Redis 서버 주소
-        "port": 6379,  # Redis 서버 포트
-        "db": 0,  # Redis 데이터베이스 번호
-        "redis_expiration_time": 60 * 60 * 2,  # 캐시 만료 시간 (2시간)
-        "distributed_lock": True,  # 분산 락 활성화
-    },
-)
-
-
-async def get_cached_query_result(query):
-    cache_key = str(query)  # 쿼리를 기반으로 고유 키 생성
-    cached_result = cache_region.get(cache_key)
-
-    if cached_result is not None:
-        return cached_result  # 캐시된 결과 반환
-    else:
-        result = await execute_query(query)  # 데이터베이스 쿼리 실행
-        cache_region.set(cache_key, result)  # 결과 캐싱
-        return result
-
-
-async def execute_query(query):
-    async with engine.connect() as connection:
-        result = await connection.execute(query)
-        return result.fetchall()
